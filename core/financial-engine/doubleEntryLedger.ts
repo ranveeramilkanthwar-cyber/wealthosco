@@ -52,6 +52,13 @@ export class DoubleEntryLedger {
     return this.getAllAccounts().filter((a) => a.account_type === type);
   }
 
+  public setAccountBalance(accountId: string, newBalanceMicro: bigint): boolean {
+    const acc = this.accounts.get(accountId);
+    if (!acc) return false;
+    acc.balance_micro = newBalanceMicro;
+    return true;
+  }
+
   // --- Double-Entry Transaction Commit with ACID Rollback Guarantee ---
 
   public createJournalEntry(payload: JournalEntryPayload): {
