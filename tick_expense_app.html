@@ -1,0 +1,2003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TickPocket — Playful Tick-Mark Expense & Income Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-cream: #FFFDF9;
+      --card-white: #FFFFFF;
+      --border-playful: #E2E8F0;
+      --shadow-3d: #CBD5E1;
+      --text-dark: #1E293B;
+      --text-muted: #64748B;
+      --expense-coral: #FF6B8B;
+      --expense-bg: #FFF0F3;
+      --income-mint: #10B981;
+      --income-bg: #ECFDF5;
+      --transfer-slate: #475569;
+      --transfer-bg: #F1F5F9;
+      --indigo-tick: #6366F1;
+      --indigo-bg: #EEF2FF;
+      --excel-emerald: #16A34A;
+      --sheets-green: #0F9D58;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-fun: 'Fredoka', cursive, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-cream);
+      background-image: radial-gradient(#E2E8F0 1.2px, transparent 1.2px);
+      background-size: 20px 20px;
+      color: var(--text-dark);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      padding: 24px 16px 80px;
+    }
+
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    /* Tactile 3D Buttons & Cards */
+    .toy-card {
+      background: var(--card-white);
+      border: 2px solid var(--border-playful);
+      border-radius: 24px;
+      box-shadow: 0 4px 0 var(--shadow-3d);
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .toy-button {
+      border: 2px solid var(--border-playful);
+      border-radius: 20px;
+      box-shadow: 0 4px 0 var(--shadow-3d);
+      cursor: pointer;
+      font-family: var(--font-fun);
+      font-weight: 600;
+      transition: all 0.12s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .toy-button:active {
+      transform: translateY(4px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .mascot-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #FFD166, #FF9F1C);
+      border: 3px solid #FFFFFF;
+      box-shadow: 0 4px 12px rgba(255, 159, 28, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      animation: floatMascot 3s ease-in-out infinite;
+      cursor: pointer;
+    }
+
+    @keyframes floatMascot {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(4deg); }
+    }
+
+    .brand-title {
+      font-family: var(--font-fun);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.1;
+    }
+
+    .brand-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Welcome / Starting Balance Banner */
+    .onboarding-banner {
+      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+      border: 2px solid #F59E0B;
+      border-radius: 22px;
+      box-shadow: 0 4px 0 #D97706;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .onboarding-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #92400E;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .onboarding-desc {
+      font-size: 13px;
+      color: #B45309;
+      font-weight: 600;
+    }
+
+    /* Top Balance Odometer Grid */
+    .odometer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-pill {
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .stat-val {
+      font-family: var(--font-mono);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .stat-icon {
+      font-size: 32px;
+    }
+
+    .stat-pill.balance {
+      border-color: #C7D2FE;
+      box-shadow: 0 4px 0 #A5B4FC;
+      background: #F5F7FF;
+      color: var(--indigo-tick);
+    }
+
+    .stat-pill.income {
+      border-color: #A7F3D0;
+      box-shadow: 0 4px 0 #6EE7B7;
+      background: var(--income-bg);
+      color: var(--income-mint);
+    }
+
+    .stat-pill.expense {
+      border-color: #FECDD3;
+      box-shadow: 0 4px 0 #FDA4AF;
+      background: var(--expense-bg);
+      color: var(--expense-coral);
+    }
+
+    .stat-pill.transfer {
+      border-color: #CBD5E1;
+      box-shadow: 0 4px 0 #94A3B8;
+      background: var(--transfer-bg);
+      color: var(--transfer-slate);
+    }
+
+    /* Workspace Grid */
+    .workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    @media (max-width: 880px) {
+      .workspace-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: var(--font-fun);
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 1-Tap Daily Routine Checklist */
+    .daily-box {
+      padding: 22px;
+      height: fit-content;
+    }
+
+    .daily-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .daily-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #FAFAFA;
+      border: 2px solid var(--border-playful);
+      border-radius: 18px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .daily-item:hover {
+      background: #FFFFFF;
+      border-color: #CBD5E1;
+      transform: translateX(2px);
+    }
+
+    .daily-item.ticked {
+      background: #ECFDF5;
+      border-color: #10B981;
+      box-shadow: 0 2px 0 #6EE7B7;
+    }
+
+    .daily-item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tick-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #CBD5E1;
+      background: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .daily-item.ticked .tick-circle {
+      background: #10B981;
+      border-color: #10B981;
+      transform: scale(1.1);
+    }
+
+    .tick-circle svg {
+      width: 16px;
+      height: 16px;
+      stroke: white;
+      stroke-width: 3;
+      fill: none;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s ease;
+    }
+
+    .daily-item.ticked .tick-circle svg {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .daily-name {
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .daily-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .daily-amt {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 15px;
+    }
+
+    /* Builder Card */
+    .builder-card {
+      padding: 24px;
+    }
+
+    /* 3-Way Type Switcher */
+    .type-pill-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      background: #F1F5F9;
+      padding: 6px;
+      border-radius: 20px;
+      margin-bottom: 22px;
+    }
+
+    .type-btn {
+      padding: 10px 4px;
+      border-radius: 14px;
+      border: none;
+      font-family: var(--font-fun);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.15s ease;
+    }
+
+    .type-btn.active.expense {
+      background: var(--card-white);
+      color: var(--expense-coral);
+      box-shadow: 0 3px 0 var(--shadow-3d);
+      border: 2px solid #FDA4AF;
+    }
+
+    .type-btn.active.income {
+      background: var(--card-white);
+      color: var(--income-mint);
+      box-shadow: 0 3px 0 var(--shadow-3d);
+      border: 2px solid #6EE7B7;
+    }
+
+    .type-btn.active.transfer {
+      background: var(--card-white);
+      color: var(--transfer-slate);
+      box-shadow: 0 3px 0 var(--shadow-3d);
+      border: 2px solid #CBD5E1;
+    }
+
+    .transfer-info-box {
+      background: #F8FAFC;
+      border: 1px solid #CBD5E1;
+      border-radius: 14px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #475569;
+      margin-bottom: 18px;
+      line-height: 1.4;
+    }
+
+    /* Category Cards Grid */
+    .cat-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .cat-card {
+      padding: 12px 10px;
+      border: 2px solid var(--border-playful);
+      border-radius: 18px;
+      background: #FFFFFF;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-align: center;
+      transition: all 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 0 var(--shadow-3d);
+    }
+
+    .cat-card:hover {
+      border-color: #94A3B8;
+      transform: translateY(-2px);
+    }
+
+    .cat-card.selected {
+      border-color: var(--indigo-tick);
+      background: var(--indigo-bg);
+      box-shadow: 0 4px 0 #818CF8;
+      transform: scale(1.03);
+    }
+
+    .cat-icon {
+      font-size: 26px;
+    }
+
+    .cat-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    /* Suboptions / Sources Badges */
+    .suboptions-wrapper {
+      background: #F8FAFC;
+      border: 2px dashed #CBD5E1;
+      border-radius: 18px;
+      padding: 14px;
+      margin-bottom: 20px;
+    }
+
+    .suboptions-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .suboptions-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .source-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .source-chip {
+      padding: 8px 14px;
+      background: #FFFFFF;
+      border: 2px solid var(--border-playful);
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 0 var(--shadow-3d);
+      transition: all 0.12s ease;
+    }
+
+    .source-chip.selected {
+      background: #4F46E5;
+      color: white;
+      border-color: #4338CA;
+      box-shadow: 0 3px 0 #312E81;
+    }
+
+    .add-source-btn {
+      padding: 8px 14px;
+      background: #EEF2FF;
+      color: #4F46E5;
+      border: 2px dashed #818CF8;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Amount Chips Grid */
+    .amount-box {
+      margin-bottom: 20px;
+    }
+
+    .amount-display-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .big-amt-input-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .rupee-sym {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .big-amt-input {
+      width: 100%;
+      height: 56px;
+      padding-left: 42px;
+      padding-right: 16px;
+      border-radius: 18px;
+      border: 2px solid var(--border-playful);
+      box-shadow: 0 2px 0 var(--shadow-3d);
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--text-dark);
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .big-amt-input:focus {
+      border-color: var(--indigo-tick);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .amt-chips-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .amt-chip {
+      padding: 10px 16px;
+      background: #FFFFFF;
+      border: 2px solid var(--border-playful);
+      border-radius: 14px;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 0 var(--shadow-3d);
+      transition: all 0.12s ease;
+    }
+
+    .amt-chip:active {
+      transform: translateY(2px);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    .amt-chip:hover {
+      border-color: #6366F1;
+      background: #F8FAFC;
+    }
+
+    /* Payment Mode Pills */
+    .payment-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .pay-chip {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--border-playful);
+      border-radius: 16px;
+      background: white;
+      text-align: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 2px 0 var(--shadow-3d);
+      transition: all 0.12s ease;
+    }
+
+    .pay-chip.selected {
+      background: #FEF3C7;
+      border-color: #F59E0B;
+      color: #92400E;
+      box-shadow: 0 3px 0 #D97706;
+    }
+
+    /* Giant Save Button */
+    .save-btn {
+      width: 100%;
+      height: 64px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: white;
+      font-size: 18px;
+      border-color: #047857;
+      box-shadow: 0 5px 0 #065F46;
+      border-radius: 20px;
+    }
+
+    .save-btn.transfer-mode {
+      background: linear-gradient(135deg, #475569, #334155);
+      border-color: #1E293B;
+      box-shadow: 0 5px 0 #0F172A;
+    }
+
+    /* Live 7-Column Sheet Table */
+    .sheet-card {
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    .sheet-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    /* Separate History Filter Pills */
+    .history-tabs-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-playful);
+    }
+
+    .hist-tab {
+      padding: 8px 16px;
+      border-radius: 12px;
+      border: 1px solid var(--border-playful);
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .hist-tab.active.all {
+      background: #EEF2FF;
+      color: #4F46E5;
+      border: 2px solid #818CF8;
+    }
+
+    .hist-tab.active.exp {
+      background: #FFF0F3;
+      color: #FF6B8B;
+      border: 2px solid #FDA4AF;
+    }
+
+    .hist-tab.active.inc {
+      background: #ECFDF5;
+      color: #10B981;
+      border: 2px solid #6EE7B7;
+    }
+
+    .hist-tab.active.trans {
+      background: #F1F5F9;
+      color: #334155;
+      border: 2px solid #94A3B8;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      border-radius: 18px;
+      border: 2px solid var(--border-playful);
+    }
+
+    .excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      background: #FFFFFF;
+      min-width: 760px;
+    }
+
+    .excel-table th {
+      background: #F8FAFC;
+      border-bottom: 2px solid var(--border-playful);
+      border-right: 1px solid #E2E8F0;
+      padding: 12px 14px;
+      font-weight: 700;
+      text-align: left;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .excel-table td {
+      border-bottom: 1px solid #F1F5F9;
+      border-right: 1px solid #F1F5F9;
+      padding: 12px 14px;
+      font-weight: 600;
+    }
+
+    .excel-table tr:hover {
+      background: #FFFDF7;
+    }
+
+    .type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+    }
+
+    .type-badge.exp {
+      background: var(--expense-bg);
+      color: var(--expense-coral);
+    }
+
+    .type-badge.inc {
+      background: var(--income-bg);
+      color: var(--income-mint);
+    }
+
+    .type-badge.trans {
+      background: var(--transfer-bg);
+      color: var(--transfer-slate);
+    }
+
+    /* Export & Sync Action Bar */
+    .export-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-excel {
+      background: #ECFDF5;
+      color: #065F46;
+      border-color: #A7F3D0;
+      box-shadow: 0 4px 0 #6EE7B7;
+      padding: 12px 18px;
+    }
+
+    .btn-sheets-copy {
+      background: #EFF6FF;
+      color: #1E40AF;
+      border-color: #BFDBFE;
+      box-shadow: 0 4px 0 #93C5FD;
+      padding: 12px 18px;
+    }
+
+    .btn-sheets-sync {
+      background: #FEF3C7;
+      color: #92400E;
+      border-color: #FDE68A;
+      box-shadow: 0 4px 0 #FCD34D;
+      padding: 12px 18px;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 999;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-box {
+      background: #FFFFFF;
+      border-radius: 24px;
+      border: 3px solid var(--border-playful);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      padding: 28px;
+      max-width: 520px;
+      width: 100%;
+      position: relative;
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #F1F5F9;
+      border: none;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .code-block {
+      background: #0F172A;
+      color: #38BDF8;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 12px;
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 12px 0;
+      user-select: all;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #0F172A;
+      color: white;
+      padding: 14px 22px;
+      border-radius: 16px;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Floating Bubble Animation */
+    .floating-bubble {
+      position: absolute;
+      background: #10B981;
+      color: white;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      pointer-events: none;
+      animation: bubbleFly 1s forwards cubic-bezier(0, 0.7, 0.1, 1);
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+      z-index: 50;
+    }
+
+    @keyframes bubbleFly {
+      0% { opacity: 0; transform: translateY(0) scale(0.6); }
+      30% { opacity: 1; transform: translateY(-16px) scale(1.1); }
+      100% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="mascot-avatar" id="mascot" title="Click me for a friendly tip!">🪙</div>
+      <div>
+        <h1 class="brand-title">TickPocket</h1>
+        <p class="brand-sub">Clean Scratch Tracker • Transfers Separated from Income &amp; Expense</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="toy-button" style="background:#EEF2FF; color:#4F46E5; border-color:#C7D2FE; box-shadow:0 4px 0 #A5B4FC; padding:10px 16px; font-size:13px;" onclick="openInitialModal()">
+        👛 Set Initial Cash &amp; Bank
+      </button>
+      <button class="toy-button" style="background:#FFF; padding:10px 16px; font-size:13px;" onclick="openSyncModal()">
+        ☁️ Sheets Sync
+      </button>
+      <button class="toy-button" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5; box-shadow:0 4px 0 #F87171; padding:10px 16px; font-size:13px;" onclick="resetAllData()">
+        🧹 Clear
+      </button>
+    </div>
+  </header>
+
+  <!-- Starting Balances Setup Banner (shown when not initialized) -->
+  <div class="onboarding-banner" id="onboardingBanner">
+    <div>
+      <div class="onboarding-title">
+        <span>👛 Welcome to TickPocket! What are your starting balances?</span>
+      </div>
+      <div class="onboarding-desc">
+        Set your starting Cash in Hand and Bank Account balance. They are recorded in history but <strong>never</strong> counted as income or expense!
+      </div>
+    </div>
+    <button class="toy-button" style="background:#D97706; color:white; border-color:#B45309; box-shadow:0 4px 0 #92400E; padding:10px 20px; font-size:14px;" onclick="openInitialModal()">
+      🚀 Enter Starting Balances
+    </button>
+  </div>
+
+  <!-- Rolling Odometer Balances (4 Stat Cards with strict separation) -->
+  <div class="odometer-grid">
+    <div class="toy-card stat-pill balance">
+      <div>
+        <div class="stat-label">Net Surplus / Savings</div>
+        <div class="stat-val" id="netBalance">₹0</div>
+        <div class="stat-sub">Pure Income - OpEx</div>
+      </div>
+      <div class="stat-icon">🏦</div>
+    </div>
+    <div class="toy-card stat-pill income">
+      <div>
+        <div class="stat-label">Total Money In</div>
+        <div class="stat-val" id="totalIncome">₹0</div>
+        <div class="stat-sub">Excludes opening balance</div>
+      </div>
+      <div class="stat-icon">💰</div>
+    </div>
+    <div class="toy-card stat-pill expense">
+      <div>
+        <div class="stat-label">Total Money Out</div>
+        <div class="stat-val" id="totalExpense">₹0</div>
+        <div class="stat-sub">Excludes ATM &amp; CC pays</div>
+      </div>
+      <div class="stat-icon">💸</div>
+    </div>
+    <div class="toy-card stat-pill transfer">
+      <div>
+        <div class="stat-label">Transfers &amp; Neutral</div>
+        <div class="stat-val" id="totalTransfer">₹0</div>
+        <div class="stat-sub">ATM, Deposits, CC Pay</div>
+      </div>
+      <div class="stat-icon">🔄</div>
+    </div>
+  </div>
+
+  <!-- Workspace Grid -->
+  <div class="workspace-grid">
+    
+    <!-- LEFT: 1-Tap Daily Quick-Checklist -->
+    <div class="toy-card daily-box">
+      <div class="section-header">
+        <h2 class="section-title">⚡ 1-Tap Daily Routine</h2>
+        <button class="toy-button" style="background:#EEF2FF; color:#4F46E5; border-color:#C7D2FE; box-shadow:0 2px 0 #A5B4FC; font-size:12px; padding:6px 10px;" onclick="openAddHabitModal()">
+          + Add Item
+        </button>
+      </div>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+        Tap any checkbox to instantly log today's recurring habits to your sheet!
+      </p>
+
+      <div class="daily-list" id="dailyList">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </div>
+
+    <!-- RIGHT: Multi-Tick Category, Source & Amount Builder -->
+    <div class="toy-card builder-card">
+      <div class="section-header">
+        <h2 class="section-title">🎯 Multi-Tick Builder</h2>
+      </div>
+
+      <!-- 3-Way Type Switcher (Expense vs Income vs Transfer) -->
+      <div class="type-pill-box">
+        <button class="type-btn active expense" id="typeExpBtn" onclick="setType('EXPENSE')">
+          💸 Expense
+        </button>
+        <button class="type-btn income" id="typeIncBtn" onclick="setType('INCOME')">
+          💰 Income
+        </button>
+        <button class="type-btn transfer" id="typeTransBtn" onclick="setType('TRANSFER')">
+          🔄 Transfer
+        </button>
+      </div>
+
+      <div id="transferInfoBox" class="transfer-info-box" style="display:none;">
+        ℹ️ <strong>Transfers &amp; Neutral Entries:</strong> Moves money between your accounts (e.g. Bank to Cash ATM withdrawal, CC Bill Pay). Recorded in full history, but <strong>never</strong> counted as Income or Expense!
+      </div>
+
+      <!-- Category Grid -->
+      <div class="cat-label">
+        <span>Step 1: Tick Category</span>
+        <span style="font-size:11px; text-transform:none; font-weight:600; color:var(--indigo-tick);" id="selectedCatText">None Selected</span>
+      </div>
+      <div class="category-grid" id="categoryGrid">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Suboptions / Sources -->
+      <div class="suboptions-wrapper">
+        <div class="suboptions-header">
+          <span class="suboptions-title">Step 2: Tick Source / Sub-Option</span>
+          <button class="add-source-btn" onclick="openAddSourceModal()">+ Add New Source</button>
+        </div>
+        <div class="source-chips" id="sourceChips">
+          <!-- Rendered via JavaScript based on category -->
+        </div>
+      </div>
+
+      <!-- Amount Builder -->
+      <div class="amount-box">
+        <div class="cat-label">
+          <span>Step 3: Tick Amount Chips (Additive)</span>
+          <button style="border:none; background:none; color:var(--text-muted); font-size:11px; cursor:pointer;" onclick="clearAmount()">Clear Amount</button>
+        </div>
+        <div class="amount-display-row">
+          <div class="big-amt-input-wrap">
+            <span class="rupee-sym">₹</span>
+            <input type="number" class="big-amt-input" id="amountInput" placeholder="0" min="0" step="any">
+          </div>
+        </div>
+        <div class="amt-chips-grid">
+          <button class="amt-chip" onclick="addAmount(10)">+₹10</button>
+          <button class="amt-chip" onclick="addAmount(20)">+₹20</button>
+          <button class="amt-chip" onclick="addAmount(50)">+₹50</button>
+          <button class="amt-chip" onclick="addAmount(100)">+₹100</button>
+          <button class="amt-chip" onclick="addAmount(200)">+₹200</button>
+          <button class="amt-chip" onclick="addAmount(500)">+₹500</button>
+          <button class="amt-chip" onclick="addAmount(1000)">+₹1,000</button>
+          <button class="amt-chip" onclick="addAmount(2000)">+₹2,000</button>
+        </div>
+      </div>
+
+      <!-- Payment Mode (Hidden if Transfer) -->
+      <div id="paymentModeSection">
+        <div class="cat-label">
+          <span>Step 4: Tick Payment Mode</span>
+        </div>
+        <div class="payment-row">
+          <div class="pay-chip selected" onclick="setPaymentMode('UPI / GPay', this)">📱 UPI / GPay</div>
+          <div class="pay-chip" onclick="setPaymentMode('Cash', this)">💵 Cash</div>
+          <div class="pay-chip" onclick="setPaymentMode('Card / Bank', this)">💳 Card / Bank</div>
+        </div>
+      </div>
+
+      <!-- Save Button -->
+      <button class="toy-button save-btn" id="saveButton" onclick="commitEntry()">
+        <span>✅ TICK &amp; SAVE TO SHEET</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Live 7-Column Sheet Table with SEPARATE HISTORY TABS -->
+  <div class="toy-card sheet-card">
+    <div class="sheet-toolbar">
+      <div>
+        <h2 class="section-title">📊 Live Sheet Table &amp; History</h2>
+        <p style="font-size:12px; color:var(--text-muted);">Separate history views for Expenses, Income, and Transfers</p>
+      </div>
+
+      <!-- Export & Sync Bar -->
+      <div class="export-bar">
+        <button class="toy-button btn-excel" onclick="exportToExcel()">
+          📥 Download Excel (.CSV)
+        </button>
+        <button class="toy-button btn-sheets-copy" onclick="copyForGoogleSheets()">
+          📋 Copy for Google Sheets
+        </button>
+        <button class="toy-button btn-sheets-sync" onclick="syncAllToGoogleSheets()">
+          ☁️ Sync to Google Sheets
+        </button>
+      </div>
+    </div>
+
+    <!-- 4 Separate History Tabs -->
+    <div class="history-tabs-bar">
+      <button class="hist-tab active all" id="tabAll" onclick="setHistoryFilter('ALL')">
+        📋 All Transactions (<span id="countAll">0</span>)
+      </button>
+      <button class="hist-tab" id="tabExp" onclick="setHistoryFilter('EXPENSE')">
+        💸 Expenses Only (<span id="countExp">0</span>)
+      </button>
+      <button class="hist-tab" id="tabInc" onclick="setHistoryFilter('INCOME')">
+        💰 Income Only (<span id="countInc">0</span>)
+      </button>
+      <button class="hist-tab" id="tabTrans" onclick="setHistoryFilter('TRANSFER')">
+        🔄 Transfers &amp; Neutral (<span id="countTrans">0</span>)
+      </button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="excel-table" id="transactionsTable">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th>Date</th>
+            <th>Time</th>
+            <th>Type</th>
+            <th>Category &amp; Source</th>
+            <th>Payment Mode</th>
+            <th style="text-align:right;">Amount (₹)</th>
+            <th>Quick Note / Tag</th>
+            <th style="text-align:center;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <!-- Rendered via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Initial Cash & Bank Setup -->
+<div class="modal-overlay" id="initialModal">
+  <div class="modal-box">
+    <button class="close-modal" onclick="closeModal('initialModal')">&times;</button>
+    <h3 class="section-title" style="margin-bottom:8px;">👛 Set Starting Balances</h3>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:18px;">
+      Enter your initial Cash in Hand and Bank Account balance. These will appear in history as starting balances and will <strong>never</strong> be counted as income or expense!
+    </p>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">💵 Initial Cash in Hand (₹)</label>
+      <input type="number" id="initCashInput" placeholder="e.g. 5000" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:16px; font-family:var(--font-mono); font-weight:700; margin-top:4px; outline:none;">
+    </div>
+
+    <div style="margin-bottom:20px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">🏦 Initial Bank Account Balance (₹)</label>
+      <input type="number" id="initBankInput" placeholder="e.g. 25000" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:16px; font-family:var(--font-mono); font-weight:700; margin-top:4px; outline:none;">
+    </div>
+
+    <button class="toy-button save-btn" style="height:50px; font-size:15px;" onclick="saveInitialBalances()">
+      🚀 Save Starting Balances
+    </button>
+  </div>
+</div>
+
+<!-- Modal: Add Source / Suboption -->
+<div class="modal-overlay" id="addSourceModal">
+  <div class="modal-box">
+    <button class="close-modal" onclick="closeModal('addSourceModal')">&times;</button>
+    <h3 class="section-title" style="margin-bottom:12px;">+ Add Custom Source</h3>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+      Add a specific source or sub-option for <strong id="modalCatName">Selected Category</strong>.
+    </p>
+    <input type="text" id="newSourceInput" placeholder="e.g., Swiggy, Chai Tapri, Petrol Pump" style="width:100%; height:48px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:15px; margin-bottom:20px; outline:none;">
+    <button class="toy-button save-btn" style="height:50px; font-size:15px;" onclick="saveCustomSource()">
+      Save Source
+    </button>
+  </div>
+</div>
+
+<!-- Modal: Add Daily Habit -->
+<div class="modal-overlay" id="addHabitModal">
+  <div class="modal-box">
+    <button class="close-modal" onclick="closeModal('addHabitModal')">&times;</button>
+    <h3 class="section-title" style="margin-bottom:12px;">⚡ Add Daily Routine Item</h3>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Item Name</label>
+      <input type="text" id="habitNameInput" placeholder="e.g., Evening Gym Shake" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:14px; margin-top:4px; outline:none;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Emoji Icon</label>
+      <input type="text" id="habitIconInput" placeholder="🥤" value="✨" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:18px; margin-top:4px; outline:none;">
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Amount (₹)</label>
+      <input type="number" id="habitAmountInput" placeholder="80" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:15px; margin-top:4px; outline:none;">
+    </div>
+    <div style="margin-bottom:20px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Type</label>
+      <select id="habitTypeSelect" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:14px; margin-top:4px; outline:none;">
+        <option value="EXPENSE">Expense (-₹)</option>
+        <option value="INCOME">Income (+₹)</option>
+        <option value="TRANSFER">Transfer / Neutral (↔₹)</option>
+      </select>
+    </div>
+    <button class="toy-button save-btn" style="height:50px; font-size:15px;" onclick="saveDailyHabit()">
+      Save Daily Habit
+    </button>
+  </div>
+</div>
+
+<!-- Modal: Google Sheets Sync Settings -->
+<div class="modal-overlay" id="syncModal">
+  <div class="modal-box" style="max-width:580px;">
+    <button class="close-modal" onclick="closeModal('syncModal')">&times;</button>
+    <h3 class="section-title" style="margin-bottom:8px;">☁️ Google Sheets Auto-Sync</h3>
+    <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+      Sync every ticked transaction directly to your live Google Sheet without a backend server!
+    </p>
+
+    <div style="margin-bottom:14px;">
+      <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Google Apps Script Web App URL</label>
+      <input type="url" id="sheetWebhookInput" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%; height:46px; border:2px solid var(--border-playful); border-radius:14px; padding:0 14px; font-size:13px; font-family:var(--font-mono); margin-top:4px; outline:none;">
+    </div>
+
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+      <input type="checkbox" id="autoSyncCheckbox" style="width:18px; height:18px; accent-color:var(--indigo-tick);">
+      <label for="autoSyncCheckbox" style="font-size:13px; font-weight:600;">Auto-sync immediately on every tick</label>
+    </div>
+
+    <p style="font-size:12px; font-weight:700; color:var(--text-dark); margin-bottom:4px;">15-Line Google Apps Script Code:</p>
+    <div class="code-block" id="scriptCode">function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  var rows = Array.isArray(data) ? data : [data];
+  rows.forEach(function(r) {
+    sheet.appendRow([
+      r.date,
+      r.time,
+      r.type,
+      r.category + (r.source ? " (" + r.source + ")" : ""),
+      r.paymentMode,
+      Number(r.amount),
+      r.note || "Ticked Entry"
+    ]);
+  });
+  return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+
+    <div style="display:flex; gap:10px; margin-top:16px;">
+      <button class="toy-button" style="flex:1; background:#EEF2FF; color:#4F46E5; border-color:#C7D2FE; padding:12px;" onclick="copyScriptCode()">
+        📋 Copy Apps Script
+      </button>
+      <button class="toy-button save-btn" style="flex:1; height:46px; font-size:14px;" onclick="saveSyncSettings()">
+        Save Settings
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toastMessage">Entry saved!</div>
+
+<script>
+  // Web Audio Synthesizer
+  let audioCtx = null;
+  function getAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+    return audioCtx;
+  }
+
+  function playTickSound() {
+    try {
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.12);
+    } catch (e) {}
+  }
+
+  function playCoinSound() {
+    try {
+      const ctx = getAudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(987.77, ctx.currentTime);
+      osc.frequency.setValueAtTime(1318.51, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.25, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.28);
+    } catch (e) {}
+  }
+
+  // Pre-configured Categories & Sources (No mock transactions!)
+  const CATEGORIES = {
+    EXPENSE: [
+      { id: 'food', name: 'Food & Dining', icon: '🍔', sources: ['Street Food / Tapri', 'Restaurant', 'Swiggy / Zomato', 'Cafe / Chai', 'Snacks'] },
+      { id: 'groceries', name: 'Groceries', icon: '🛒', sources: ['Supermarket', 'Local Kirana', 'Dairy & Milk', 'Fruits & Veggies', 'Blinkit / Zepto'] },
+      { id: 'travel', name: 'Travel & Fuel', icon: '🛺', sources: ['Auto / Bus', 'Petrol / Fuel', 'Metro Card', 'Ola / Uber', 'Train'] },
+      { id: 'bills', name: 'Bills & Recharge', icon: '📱', sources: ['Mobile Recharge', 'Electricity', 'WiFi / Broadband', 'OTT Subscriptions', 'Gas Cylinder'] },
+      { id: 'shopping', name: 'Shopping', icon: '🛍️', sources: ['Amazon / Flipkart', 'Clothing & Shoes', 'Electronics', 'Personal Care'] },
+      { id: 'medical', name: 'Medical & Health', icon: '💊', sources: ['Pharmacy / Medicine', 'Doctor Consultation', 'Lab Tests', 'Gym'] },
+      { id: 'entertainment', name: 'Entertainment', icon: '🎬', sources: ['Movies / Cinema', 'Gaming', 'Outing', 'Books'] },
+      { id: 'rent', name: 'Rent & Home', icon: '🏠', sources: ['House Rent', 'Maintenance', 'Plumbing', 'Maid'] }
+    ],
+    INCOME: [
+      { id: 'salary', name: 'Salary', icon: '💼', sources: ['Primary Job', 'Bonus', 'Overtime', 'Incentive'] },
+      { id: 'freelance', name: 'Freelance & Side', icon: '💻', sources: ['Client Project', 'Consulting', 'Design Work', 'Coding Gig'] },
+      { id: 'gifts', name: 'Gift / Pocket Money', icon: '🎁', sources: ['Parents / Family', 'Birthday Gift', 'Cashback', 'Friend Return'] },
+      { id: 'investments', name: 'Dividends & Cash', icon: '📈', sources: ['Stock Dividend', 'FD Interest', 'Gold Return', 'Mutual Fund'] },
+      { id: 'rental', name: 'Rental Inflow', icon: '🏠', sources: ['Property Rent', 'Sublet Room', 'Equipment Rental'] }
+    ],
+    TRANSFER: [
+      { id: 'atm_withdraw', name: 'ATM Cash Withdrawal', icon: '🏧', sources: ['SBI ATM', 'HDFC ATM', 'ICICI ATM', 'Local ATM'] },
+      { id: 'cash_deposit', name: 'Cash Deposit to Bank', icon: '💵', sources: ['Bank CDM Branch', 'Bank Deposit Slip', 'Agent Deposit'] },
+      { id: 'cc_payment', name: 'Credit Card Bill Pay', icon: '💳', sources: ['CRED App', 'Net Banking', 'Auto-Debit', 'UPI'] },
+      { id: 'investment_fd', name: 'Investment / FD / Gold', icon: '📈', sources: ['Zerodha / Groww', 'Bank Fixed Deposit', 'Digital Gold', 'PPF'] },
+      { id: 'friend_loan', name: 'Friend Loan Given', icon: '🤝', sources: ['Lent to Friend', 'Lent to Colleague', 'Emergency Help'] },
+      { id: 'friend_return', name: 'Friend Loan Settled', icon: '↩️', sources: ['Loan Paid Back', 'Split Return', 'Old Dues Cleared'] },
+      { id: 'bank_transfer', name: 'Self Bank Transfer', icon: '🏦', sources: ['Savings to Current', 'Primary to Secondary', 'Family Account'] }
+    ]
+  };
+
+  // State
+  let currentType = 'EXPENSE';
+  let selectedCategory = null;
+  let selectedSource = '';
+  let selectedPaymentMode = 'UPI / GPay';
+  let currentAmount = 0;
+  let currentHistoryFilter = 'ALL';
+
+  let isInitialized = localStorage.getItem('tickpocket_initialized') === 'true';
+
+  let dailyHabits = JSON.parse(localStorage.getItem('tickpocket_daily_habits') || 'null') || [
+    { id: 'h1', name: 'Morning Milk & Bread', icon: '🥛', amount: 60, type: 'EXPENSE', category: 'Groceries', source: 'Dairy & Milk' },
+    { id: 'h2', name: 'Auto / Bus Commute', icon: '🛺', amount: 50, type: 'EXPENSE', category: 'Travel & Fuel', source: 'Auto / Bus' },
+    { id: 'h3', name: 'Tea & Snacks Break', icon: '☕', amount: 30, type: 'EXPENSE', category: 'Food & Dining', source: 'Street Food / Tapri' },
+    { id: 'h4', name: 'Lunch / Meal', icon: '🍱', amount: 120, type: 'EXPENSE', category: 'Food & Dining', source: 'Restaurant' }
+  ];
+
+  // Starts strictly empty (ZERO DEMO DATA)
+  let transactions = JSON.parse(localStorage.getItem('tickpocket_transactions') || '[]');
+  let syncSettings = JSON.parse(localStorage.getItem('tickpocket_sync_settings') || '{"webhookUrl":"","autoSync":false}');
+
+  // Lifecycle Initialization
+  window.addEventListener('DOMContentLoaded', () => {
+    if (isInitialized) {
+      document.getElementById('onboardingBanner').style.display = 'none';
+    }
+    renderDailyHabits();
+    renderCategories();
+    renderTransactionsTable();
+    updateOdometer();
+
+    document.getElementById('sheetWebhookInput').value = syncSettings.webhookUrl || '';
+    document.getElementById('autoSyncCheckbox').checked = !!syncSettings.autoSync;
+
+    document.getElementById('amountInput').addEventListener('input', (e) => {
+      currentAmount = parseFloat(e.target.value) || 0;
+    });
+
+    document.getElementById('mascot').addEventListener('click', () => {
+      showToast('Finny says: "Track cleanly! Transfers and opening balances are kept separate!"');
+      playCoinSound();
+    });
+  });
+
+  // Type Switcher
+  function setType(type) {
+    currentType = type;
+    playTickSound();
+    const expBtn = document.getElementById('typeExpBtn');
+    const incBtn = document.getElementById('typeIncBtn');
+    const transBtn = document.getElementById('typeTransBtn');
+    const transInfo = document.getElementById('transferInfoBox');
+    const paySection = document.getElementById('paymentModeSection');
+    const saveBtn = document.getElementById('saveButton');
+
+    expBtn.className = 'type-btn';
+    incBtn.className = 'type-btn';
+    transBtn.className = 'type-btn';
+
+    if (type === 'EXPENSE') {
+      expBtn.className = 'type-btn active expense';
+      transInfo.style.display = 'none';
+      paySection.style.display = 'block';
+      saveBtn.className = 'toy-button save-btn';
+      saveBtn.innerHTML = '<span>✅ TICK & SAVE TO SHEET</span>';
+    } else if (type === 'INCOME') {
+      incBtn.className = 'type-btn active income';
+      transInfo.style.display = 'none';
+      paySection.style.display = 'block';
+      saveBtn.className = 'toy-button save-btn';
+      saveBtn.innerHTML = '<span>✅ TICK & SAVE TO SHEET</span>';
+    } else {
+      transBtn.className = 'type-btn active transfer';
+      transInfo.style.display = 'block';
+      paySection.style.display = 'none';
+      saveBtn.className = 'toy-button save-btn transfer-mode';
+      saveBtn.innerHTML = '<span>🔄 RECORD TRANSFER / NEUTRAL ENTRY</span>';
+    }
+
+    selectedCategory = null;
+    selectedSource = '';
+    document.getElementById('selectedCatText').innerText = 'None Selected';
+    renderCategories();
+    renderSources();
+  }
+
+  // Render Categories
+  function renderCategories() {
+    const grid = document.getElementById('categoryGrid');
+    grid.innerHTML = '';
+    const list = CATEGORIES[currentType];
+
+    list.forEach(cat => {
+      const card = document.createElement('div');
+      card.className = `cat-card ${selectedCategory && selectedCategory.id === cat.id ? 'selected' : ''}`;
+      card.innerHTML = `
+        <span class="cat-icon">${cat.icon}</span>
+        <span class="cat-title">${cat.name}</span>
+      `;
+      card.onclick = () => selectCategory(cat);
+      grid.appendChild(card);
+    });
+  }
+
+  function selectCategory(cat) {
+    selectedCategory = cat;
+    selectedSource = cat.sources[0] || '';
+    document.getElementById('selectedCatText').innerText = `${cat.icon} ${cat.name}`;
+    playTickSound();
+    renderCategories();
+    renderSources();
+  }
+
+  // Render Sources
+  function renderSources() {
+    const container = document.getElementById('sourceChips');
+    container.innerHTML = '';
+
+    if (!selectedCategory) {
+      container.innerHTML = `<span style="font-size:12px; color:var(--text-muted);">Please select a category above to view and add sources.</span>`;
+      return;
+    }
+
+    selectedCategory.sources.forEach(src => {
+      const chip = document.createElement('div');
+      chip.className = `source-chip ${selectedSource === src ? 'selected' : ''}`;
+      chip.innerText = src;
+      chip.onclick = () => {
+        selectedSource = src;
+        playTickSound();
+        renderSources();
+      };
+      container.appendChild(chip);
+    });
+  }
+
+  // Modal: Initial Cash & Bank Setup
+  function openInitialModal() {
+    document.getElementById('initialModal').classList.add('active');
+  }
+
+  function saveInitialBalances() {
+    const cashVal = parseFloat(document.getElementById('initCashInput').value) || 0;
+    const bankVal = parseFloat(document.getElementById('initBankInput').value) || 0;
+
+    if (cashVal <= 0 && bankVal <= 0) {
+      showToast('Please enter starting Cash or Bank balance!');
+      return;
+    }
+
+    const now = new Date();
+    if (cashVal > 0) {
+      transactions.unshift({
+        id: 'tx_init_cash_' + Date.now(),
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'TRANSFER',
+        category: 'Opening Cash in Hand',
+        source: 'Initial Setup',
+        paymentMode: 'Cash',
+        amount: cashVal,
+        note: 'Starting Cash Balance (Non-Income Equity)'
+      });
+    }
+
+    if (bankVal > 0) {
+      transactions.unshift({
+        id: 'tx_init_bank_' + Date.now(),
+        date: now.toISOString().split('T')[0],
+        time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        type: 'TRANSFER',
+        category: 'Opening Bank Account',
+        source: 'Initial Setup',
+        paymentMode: 'Card / Bank',
+        amount: bankVal,
+        note: 'Starting Bank Balance (Non-Income Equity)'
+      });
+    }
+
+    localStorage.setItem('tickpocket_initialized', 'true');
+    isInitialized = true;
+    document.getElementById('onboardingBanner').style.display = 'none';
+    closeModal('initialModal');
+    saveAndRefresh();
+    playCoinSound();
+    showToast(`Recorded starting balances! Cash: ₹${cashVal.toLocaleString('en-IN')}, Bank: ₹${bankVal.toLocaleString('en-IN')}`);
+  }
+
+  // Modal: Add Custom Source
+  function openAddSourceModal() {
+    if (!selectedCategory) {
+      showToast('Please pick a category first!');
+      return;
+    }
+    document.getElementById('modalCatName').innerText = `${selectedCategory.icon} ${selectedCategory.name}`;
+    document.getElementById('newSourceInput').value = '';
+    document.getElementById('addSourceModal').classList.add('active');
+  }
+
+  function saveCustomSource() {
+    const val = document.getElementById('newSourceInput').value.trim();
+    if (!val) return;
+    selectedCategory.sources.push(val);
+    selectedSource = val;
+    closeModal('addSourceModal');
+    playCoinSound();
+    renderSources();
+    showToast(`Added source: ${val}`);
+  }
+
+  // Modal: Add Daily Habit
+  function openAddHabitModal() {
+    document.getElementById('addHabitModal').classList.add('active');
+  }
+
+  function saveDailyHabit() {
+    const name = document.getElementById('habitNameInput').value.trim();
+    const icon = document.getElementById('habitIconInput').value.trim() || '✨';
+    const amount = parseFloat(document.getElementById('habitAmountInput').value) || 0;
+    const type = document.getElementById('habitTypeSelect').value;
+
+    if (!name || amount <= 0) {
+      showToast('Please enter a valid habit name and amount!');
+      return;
+    }
+
+    const newHabit = {
+      id: 'h_' + Date.now(),
+      name,
+      icon,
+      amount,
+      type,
+      category: type === 'EXPENSE' ? 'Daily Routine' : type === 'INCOME' ? 'Daily Inflow' : 'Daily Transfer',
+      source: 'Custom Routine'
+    };
+
+    dailyHabits.push(newHabit);
+    localStorage.setItem('tickpocket_daily_habits', JSON.stringify(dailyHabits));
+    closeModal('addHabitModal');
+    renderDailyHabits();
+    playCoinSound();
+    showToast(`Added routine: ${icon} ${name}`);
+  }
+
+  // Render Daily Habits
+  function renderDailyHabits() {
+    const list = document.getElementById('dailyList');
+    list.innerHTML = '';
+
+    dailyHabits.forEach(habit => {
+      const item = document.createElement('div');
+      item.className = 'daily-item';
+      item.innerHTML = `
+        <div class="daily-item-left">
+          <div class="tick-circle">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          </div>
+          <div>
+            <div class="daily-name">${habit.icon} ${habit.name}</div>
+            <div class="daily-sub">${habit.source}</div>
+          </div>
+        </div>
+        <div class="daily-amt" style="color:${habit.type === 'INCOME' ? 'var(--income-mint)' : habit.type === 'EXPENSE' ? 'var(--text-dark)' : 'var(--transfer-slate)'};">
+          ${habit.type === 'INCOME' ? '+' : habit.type === 'EXPENSE' ? '-' : '↔'}₹${habit.amount}
+        </div>
+      `;
+
+      item.onclick = (e) => tickDailyItem(habit, item, e);
+      list.appendChild(item);
+    });
+  }
+
+  function tickDailyItem(habit, element, evt) {
+    element.classList.add('ticked');
+    playCoinSound();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'floating-bubble';
+    bubble.innerText = `${habit.type === 'INCOME' ? '+' : habit.type === 'EXPENSE' ? '-' : '↔'}₹${habit.amount} Logged!`;
+    bubble.style.left = (evt.clientX - 40) + 'px';
+    bubble.style.top = (evt.clientY - 20) + 'px';
+    document.body.appendChild(bubble);
+    setTimeout(() => bubble.remove(), 1000);
+
+    const now = new Date();
+    const entry = {
+      id: 'tx_' + Date.now(),
+      date: now.toISOString().split('T')[0],
+      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: habit.type,
+      category: habit.name,
+      source: habit.source,
+      paymentMode: habit.type === 'TRANSFER' ? 'Account Transfer' : 'UPI / GPay',
+      amount: habit.amount,
+      note: 'Ticked via 1-Tap Daily Routine'
+    };
+
+    transactions.unshift(entry);
+    saveAndRefresh();
+
+    if (syncSettings.autoSync && syncSettings.webhookUrl) {
+      pushRowToGoogleSheet(entry);
+    }
+
+    setTimeout(() => {
+      element.classList.remove('ticked');
+    }, 1200);
+  }
+
+  // Amount Handlers
+  function addAmount(val) {
+    currentAmount += val;
+    document.getElementById('amountInput').value = currentAmount;
+    playTickSound();
+  }
+
+  function clearAmount() {
+    currentAmount = 0;
+    document.getElementById('amountInput').value = '';
+    playTickSound();
+  }
+
+  // Payment Mode
+  function setPaymentMode(mode, el) {
+    selectedPaymentMode = mode;
+    document.querySelectorAll('.pay-chip').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    playTickSound();
+  }
+
+  // Commit Entry
+  function commitEntry() {
+    if (!selectedCategory) {
+      showToast('Please tick a category first!');
+      return;
+    }
+    if (currentAmount <= 0) {
+      showToast('Please enter or tick an amount!');
+      return;
+    }
+
+    const now = new Date();
+    const entry = {
+      id: 'tx_' + Date.now(),
+      date: now.toISOString().split('T')[0],
+      time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      type: currentType,
+      category: selectedCategory.name,
+      source: selectedSource || selectedCategory.name,
+      paymentMode: currentType === 'TRANSFER' ? 'Account Transfer' : selectedPaymentMode,
+      amount: currentAmount,
+      note: currentType === 'TRANSFER' 
+        ? `Transfer: ${selectedCategory.name} (${selectedSource || 'Neutral Entry'})`
+        : 'Ticked Entry'
+    };
+
+    transactions.unshift(entry);
+    saveAndRefresh();
+    playCoinSound();
+
+    if (currentType === 'TRANSFER') {
+      showToast(`🔄 Recorded Transfer ₹${currentAmount} (Not counted as Income or Expense)!`);
+    } else {
+      showToast(`Saved ₹${currentAmount} to sheet!`);
+    }
+
+    if (syncSettings.autoSync && syncSettings.webhookUrl) {
+      pushRowToGoogleSheet(entry);
+    }
+
+    clearAmount();
+  }
+
+  function saveAndRefresh() {
+    localStorage.setItem('tickpocket_transactions', JSON.stringify(transactions));
+    renderTransactionsTable();
+    updateOdometer();
+  }
+
+  // Rolling Totals (STRICT SEPARATION: Transfers/Neutral are NOT Income or Expense!)
+  function updateOdometer() {
+    let income = 0;
+    let expense = 0;
+    let transfer = 0;
+
+    transactions.forEach(t => {
+      if (t.type === 'INCOME') income += Number(t.amount);
+      else if (t.type === 'EXPENSE') expense += Number(t.amount);
+      else if (t.type === 'TRANSFER') transfer += Number(t.amount);
+    });
+
+    const net = income - expense;
+    document.getElementById('totalIncome').innerText = `₹${income.toLocaleString('en-IN')}`;
+    document.getElementById('totalExpense').innerText = `₹${expense.toLocaleString('en-IN')}`;
+    document.getElementById('totalTransfer').innerText = `₹${transfer.toLocaleString('en-IN')}`;
+    document.getElementById('netBalance').innerText = `₹${net.toLocaleString('en-IN')}`;
+
+    // Update counts on filter tabs
+    document.getElementById('countAll').innerText = transactions.length;
+    document.getElementById('countExp').innerText = transactions.filter(t => t.type === 'EXPENSE').length;
+    document.getElementById('countInc').innerText = transactions.filter(t => t.type === 'INCOME').length;
+    document.getElementById('countTrans').innerText = transactions.filter(t => t.type === 'TRANSFER').length;
+  }
+
+  // Filter History Tabs
+  function setHistoryFilter(filter) {
+    currentHistoryFilter = filter;
+    playTickSound();
+
+    document.querySelectorAll('.hist-tab').forEach(t => t.className = 'hist-tab');
+    if (filter === 'ALL') document.getElementById('tabAll').className = 'hist-tab active all';
+    else if (filter === 'EXPENSE') document.getElementById('tabExp').className = 'hist-tab active exp';
+    else if (filter === 'INCOME') document.getElementById('tabInc').className = 'hist-tab active inc';
+    else if (filter === 'TRANSFER') document.getElementById('tabTrans').className = 'hist-tab active trans';
+
+    renderTransactionsTable();
+  }
+
+  // Render Sheet Table
+  function renderTransactionsTable() {
+    const tbody = document.getElementById('tableBody');
+    tbody.innerHTML = '';
+
+    const filtered = transactions.filter(t => {
+      if (currentHistoryFilter === 'ALL') return true;
+      return t.type === currentHistoryFilter;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:32px; color:var(--text-muted);">No entries in this view. Tick a category above or tap a daily habit to log an entry!</td></tr>`;
+      return;
+    }
+
+    filtered.forEach((tx, idx) => {
+      const tr = document.createElement('tr');
+      const badgeClass = tx.type === 'INCOME' ? 'inc' : tx.type === 'EXPENSE' ? 'exp' : 'trans';
+      const badgeText = tx.type === 'INCOME' ? '💰 INCOME' : tx.type === 'EXPENSE' ? '💸 EXPENSE' : '🔄 TRANSFER';
+      const amtColor = tx.type === 'INCOME' ? 'var(--income-mint)' : tx.type === 'EXPENSE' ? 'var(--text-dark)' : 'var(--transfer-slate)';
+      const amtSign = tx.type === 'INCOME' ? '+' : tx.type === 'EXPENSE' ? '-' : '↔';
+
+      tr.innerHTML = `
+        <td style="color:var(--text-muted); font-family:var(--font-mono);">${idx + 1}</td>
+        <td style="font-family:var(--font-mono);">${tx.date}</td>
+        <td style="font-family:var(--font-mono); color:var(--text-muted);">${tx.time}</td>
+        <td>
+          <span class="type-badge ${badgeClass}">
+            ${badgeText}
+          </span>
+        </td>
+        <td>
+          <strong>${tx.category}</strong>
+          ${tx.source ? `<span style="font-size:11px; color:var(--text-muted); display:block;">(${tx.source})</span>` : ''}
+        </td>
+        <td><span style="font-size:12px; background:#F1F5F9; padding:2px 6px; border-radius:6px;">${tx.paymentMode}</span></td>
+        <td style="text-align:right; font-family:var(--font-mono); font-weight:700; color:${amtColor};">
+          ${amtSign}₹${Number(tx.amount).toLocaleString('en-IN')}
+        </td>
+        <td style="font-size:12px; color:var(--text-muted);">${tx.note || ''}</td>
+        <td style="text-align:center;">
+          <button style="border:none; background:none; cursor:pointer; color:#EF4444; font-size:14px;" onclick="deleteEntry('${tx.id}')" title="Delete row">🗑️</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function deleteEntry(id) {
+    transactions = transactions.filter(t => t.id !== id);
+    saveAndRefresh();
+    playTickSound();
+    showToast('Row removed from sheet table');
+  }
+
+  function resetAllData() {
+    if (confirm('Clear all transactions and reset sheet to clean scratch state?')) {
+      transactions = [];
+      localStorage.removeItem('tickpocket_initialized');
+      isInitialized = false;
+      document.getElementById('onboardingBanner').style.display = 'flex';
+      saveAndRefresh();
+      showToast('All sheet data cleared!');
+    }
+  }
+
+  // EXPORT 1: Excel (.CSV with UTF-8 BOM)
+  function exportToExcel() {
+    if (transactions.length === 0) {
+      showToast('No entries to export!');
+      return;
+    }
+
+    const headers = ['Date', 'Time', 'Type', 'Category', 'Source', 'Payment Mode', 'Amount (₹)', 'Quick Note / Tag'];
+    const rows = transactions.map(t => [
+      t.date,
+      t.time,
+      t.type,
+      `"${t.category.replace(/"/g, '""')}"`,
+      `"${(t.source || '').replace(/"/g, '""')}"`,
+      `"${t.paymentMode}"`,
+      t.amount,
+      `"${(t.note || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `TickPocket_Expenses_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    playCoinSound();
+    showToast('Downloaded Excel CSV with UTF-8 BOM!');
+  }
+
+  // EXPORT 2: Copy for Google Sheets (TSV)
+  function copyForGoogleSheets() {
+    if (transactions.length === 0) {
+      showToast('No entries to copy!');
+      return;
+    }
+
+    const headers = ['Date', 'Time', 'Type', 'Category & Source', 'Payment Mode', 'Amount', 'Note'];
+    const tsvRows = transactions.map(t => [
+      t.date,
+      t.time,
+      t.type,
+      `${t.category}${t.source ? ' (' + t.source + ')' : ''}`,
+      t.paymentMode,
+      t.amount,
+      t.note || ''
+    ].join('\t'));
+
+    const fullTsv = [headers.join('\t'), ...tsvRows].join('\n');
+    navigator.clipboard.writeText(fullTsv).then(() => {
+      playCoinSound();
+      showToast('📋 Copied! Press Ctrl+V in your Google Sheet!');
+    }).catch(() => {
+      showToast('Could not copy to clipboard');
+    });
+  }
+
+  // EXPORT 3: Live Google Sheets Push
+  function syncAllToGoogleSheets() {
+    if (!syncSettings.webhookUrl) {
+      openSyncModal();
+      showToast('Please set your Google Apps Script URL first!');
+      return;
+    }
+    if (transactions.length === 0) {
+      showToast('No rows to sync!');
+      return;
+    }
+
+    showToast('Syncing all rows to Google Sheets...');
+    fetch(syncSettings.webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(transactions)
+    }).then(() => {
+      playCoinSound();
+      showToast('☁️ Successfully sent to your Google Sheet!');
+    }).catch(err => {
+      showToast('Sync failed: ' + err.message);
+    });
+  }
+
+  function pushRowToGoogleSheet(row) {
+    if (!syncSettings.webhookUrl) return;
+    fetch(syncSettings.webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(row)
+    }).catch(() => {});
+  }
+
+  // Modals & Sync Settings
+  function openSyncModal() {
+    document.getElementById('syncModal').classList.add('active');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  function saveSyncSettings() {
+    syncSettings.webhookUrl = document.getElementById('sheetWebhookInput').value.trim();
+    syncSettings.autoSync = document.getElementById('autoSyncCheckbox').checked;
+    localStorage.setItem('tickpocket_sync_settings', JSON.stringify(syncSettings));
+    closeModal('syncModal');
+    playCoinSound();
+    showToast('Sync settings saved!');
+  }
+
+  function copyScriptCode() {
+    const code = document.getElementById('scriptCode').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      playTickSound();
+      showToast('Apps Script code copied to clipboard!');
+    });
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toastMessage');
+    toast.innerText = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, 2800);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WealthOS v4.0 — Child-Simple Aesthetics & Silent CA Engine</title>
+<style>
+  :root {
+    --bg: #090D16;
+    --card: rgba(30, 41, 59, 0.65);
+    --border: rgba(255, 255, 255, 0.12);
+    --text: #F8FAFC;
+    --muted: #94A3B8;
+    --mint: #10B981;
+    --violet: #8B5CF6;
+    --rose: #F43F5E;
+    --amber: #F59E0B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    background: radial-gradient(circle at 20% 10%, #1e1b4b 0%, #090d16 55%, #022c22 100%);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .glass {
+    background: var(--card);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.3s;
+  }
+  .glass:hover { transform: translateY(-4px); border-color: rgba(139, 92, 246, 0.45); }
+  /* Top Nav & 3-Tier Switcher */
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 32px; max-width: 1320px; margin: 0 auto;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.35rem; letter-spacing: -0.5px; }
+  .coin-logo {
+    width: 40px; height: 40px; border-radius: 14px;
+    background: linear-gradient(135deg, #34D399, #6366F1);
+    display: grid; place-items: center; font-size: 1.3rem;
+    box-shadow: 0 0 25px rgba(52, 211, 153, 0.5);
+    animation: floatSlow 3s ease-in-out infinite;
+  }
+  @keyframes floatSlow { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-6px) rotate(4deg); } }
+  .mode-pills { display: flex; background: rgba(15, 23, 42, 0.8); padding: 5px; border-radius: 99px; border: 1px solid var(--border); gap: 6px; }
+  .mode-btn {
+    border: none; background: transparent; color: var(--muted); padding: 8px 16px;
+    border-radius: 99px; cursor: pointer; font-weight: 700; font-size: 0.85rem;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .mode-btn.active { background: linear-gradient(135deg, #8B5CF6, #10B981); color: #fff; transform: scale(1.05); box-shadow: 0 4px 15px rgba(139,92,246,0.4); }
+  /* 3D Squircle Companion Mascot ("Botosi / Finny") */
+  .mascot-stage { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+  .squircle-mascot {
+    width: 58px; height: 58px; border-radius: 22px;
+    background: radial-gradient(circle at 30% 30%, #A7F3D0, #10B981 65%, #047857);
+    position: relative; display: flex; justify-content: center; align-items: center; gap: 10px;
+    box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4), inset 0 4px 8px rgba(255,255,255,0.6);
+    animation: breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07, 0.95); } }
+  .eye { width: 9px; height: 13px; background: #090D16; border-radius: 50%; position: relative; transition: all 0.25s; }
+  .eye::after { content: ''; width: 4px; height: 4px; background: #fff; border-radius: 50%; position: absolute; top: 2px; left: 2px; }
+  .squircle-mascot.peekaboo .eye { height: 3px; border-radius: 2px; }
+  .hand {
+    width: 14px; height: 14px; background: #34D399; border-radius: 50%;
+    position: absolute; bottom: -5px; transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  }
+  .hand.left { left: 6px; } .hand.right { right: 6px; }
+  .squircle-mascot.peekaboo .hand.left { bottom: 22px; left: 12px; }
+  .squircle-mascot.peekaboo .hand.right { bottom: 22px; right: 12px; }
+  .mascot-bubble {
+    background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+    padding: 8px 14px; border-radius: 16px; font-size: 0.85rem; max-width: 260px;
+  }
+  /* Main Grid */
+  .bento-grid {
+    max-width: 1320px; margin: 12px auto 100px; padding: 0 32px;
+    display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 24px;
+  }
+  /* Safe-to-Spend Liquid Orb */
+  .orb-card { padding: 28px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .liquid-orb {
+    width: 210px; height: 210px; border-radius: 50%;
+    background: radial-gradient(circle at 30% 25%, #A78BFA, #6366F1 55%, #312E81);
+    box-shadow: 0 0 60px rgba(99, 102, 241, 0.55), inset 0 10px 25px rgba(255,255,255,0.45);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin: 18px 0; position: relative; overflow: hidden; cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .liquid-orb:active { transform: scale(0.93); }
+  .orb-amount { font-size: 2.3rem; font-weight: 900; letter-spacing: -1px; font-variant-numeric: tabular-nums; }
+  .orb-sub { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; font-weight: 600; }
+  /* Quick Jars / Wallets */
+  .jars-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .jar-card { padding: 18px; cursor: pointer; position: relative; overflow: hidden; }
+  .jar-icon { font-size: 1.8rem; margin-bottom: 8px; }
+  .jar-title { font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+  .jar-val { font-size: 1.35rem; font-weight: 800; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  /* Ledger & CA Table */
+  .ledger-box { padding: 22px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  th { color: var(--muted); font-size: 0.78rem; text-transform: uppercase; }
+  .badge-debit { background: rgba(16, 185, 129, 0.2); color: #34D399; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; }
+  .badge-credit { background: rgba(139, 92, 246, 0.2); color: #C084FC; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; }
+  /* Floating Magic Command Bar */
+  .magic-bar {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    width: min(760px, 92vw); padding: 12px 18px; border-radius: 99px;
+    display: flex; align-items: center; gap: 12px; z-index: 50;
+    background: rgba(15, 23, 42, 0.88); border: 1px solid rgba(139, 92, 246, 0.5);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+  }
+  .magic-input {
+    flex: 1; background: transparent; border: none; color: #fff;
+    font-size: 0.98rem; outline: none;
+  }
+  .btn-action {
+    background: linear-gradient(135deg, #10B981, #059669); border: none; color: #fff;
+    padding: 10px 20px; border-radius: 99px; font-weight: 700; cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .btn-action:active { transform: scale(0.92); }
+  .blur-num { filter: blur(10px); transition: filter 0.25s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="coin-logo">🪙</div>
+    <div>WealthOS <span style="font-size:0.75rem; color:var(--mint); font-weight:600;">v4.0 CA Core</span></div>
+  </div>
+
+  <!-- 3-Tier Progressive Disclosure Switcher -->
+  <div class="mode-pills">
+    <button class="mode-btn" onclick="setMode('kid')" id="btn-kid">🌱 Kid / Sprout Mode</button>
+    <button class="mode-btn active" onclick="setMode('zen')" id="btn-zen">✨ Everyday Zen Mode</button>
+    <button class="mode-btn" onclick="setMode('ca')" id="btn-ca">📊 CA Pro Terminal</button>
+  </div>
+
+  <!-- 3D Squircle Companion Mascot -->
+  <div class="mascot-stage" onclick="togglePrivacy()">
+    <div class="mascot-bubble" id="mascot-speech">Hi! Tap me to test Peekaboo Privacy Mode! 🐾</div>
+    <div class="squircle-mascot" id="mascot">
+      <div class="eye"></div>
+      <div class="eye"></div>
+      <div class="hand left"></div>
+      <div class="hand right"></div>
+    </div>
+  </div>
+</header>
+
+<main class="bento-grid">
+  <!-- Left Column: Safe-to-Spend Liquid Orb + Impulse Ice Cube -->
+  <div style="display:flex; flex-direction:column; gap:22px;">
+    <div class="glass orb-card">
+      <div style="font-size:0.85rem; color:var(--muted); font-weight:700;" id="orb-label">SAFE-TO-SPEND TODAY</div>
+      <div class="liquid-orb" onclick="spendSampleCoin()">
+        <div class="orb-amount num-val" id="safe-val">₹1,450</div>
+        <div class="orb-sub" id="orb-subtext">Tap Orb to Drop ₹150 Treat Coin! 🍦</div>
+      </div>
+      <p style="font-size:0.82rem; color:var(--muted); max-width:300px;" id="orb-formula">
+        Auto-calculated after locking ₹18,000 fixed bills, ₹12,400 HDFC CC statement & 25% savings goal.
+      </p>
+    </div>
+
+    <div class="glass" style="padding:22px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1rem;">🧊 72-Hour Impulse Cooling Vault</h3>
+        <span style="font-size:0.78rem; color:var(--amber); font-weight:700;">48h 12m left</span>
+      </div>
+      <p style="font-size:0.85rem; color:var(--muted); margin:8px 0 14px;" id="impulse-desc">
+        Frozen Item: <b>Wireless Gaming Headphones (₹4,500)</b>. Costs <b>14.2 hours</b> of real office work.
+      </p>
+      <div style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); padding:10px 14px; border-radius:14px; font-size:0.83rem;">
+        🌳 <b>10-Year Compounded Tree Value (12% CAGR):</b> <span style="color:var(--mint); font-weight:800;">₹13,976</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Column: 3D Jars + Live Double-Entry Ledger -->
+  <div style="display:flex; flex-direction:column; gap:22px;">
+    <div class="jars-grid">
+      <div class="glass jar-card">
+        <div class="jar-icon">🏦</div>
+        <div class="jar-title" id="jar1-name">SBI Savings Bank (Asset)</div>
+        <div class="jar-val num-val" id="jar1-val" style="color:var(--mint);">₹64,250</div>
+      </div>
+      <div class="glass jar-card">
+        <div class="jar-icon">💳</div>
+        <div class="jar-title" id="jar2-name">HDFC Regalia CC (Liability)</div>
+        <div class="jar-val num-val" id="jar2-val" style="color:var(--rose);">₹12,400</div>
+      </div>
+      <div class="glass jar-card">
+        <div class="jar-icon">🍕</div>
+        <div class="jar-title" id="jar3-name">Food & Treats (Expense)</div>
+        <div class="jar-val num-val" id="jar3-val" style="color:var(--amber);">₹4,850</div>
+      </div>
+    </div>
+
+    <div class="glass ledger-box">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:1.05rem;" id="ledger-title">⚡ Silent Chartered Accountant Double-Entry Stream</h3>
+        <span style="font-size:0.78rem; color:var(--mint); font-weight:700;">∑ Debits == ∑ Credits (Balanced)</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Event / Story</th>
+            <th>Debit Leg (Destination)</th>
+            <th>Credit Leg (Source)</th>
+            <th>Micro-Units (x10,000)</th>
+          </tr>
+        </thead>
+        <tbody id="ledger-rows">
+          <tr>
+            <td>🍦 Mango Gelato Treat</td>
+            <td><span class="badge-debit">DEBIT</span> Expense:Food (+₹150)</td>
+            <td><span class="badge-credit">CREDIT</span> Asset:SBI_Bank (-₹150)</td>
+            <td class="num-val" style="font-family:monospace;">1,500,000</td>
+          </tr>
+          <tr>
+            <td>🍕 Split Dinner (Rohan owes half)</td>
+            <td><span class="badge-debit">DEBIT</span> Exp:Food ₹400 + Rec:Rohan ₹400</td>
+            <td><span class="badge-credit">CREDIT</span> Liab:HDFC_CC (+₹800)</td>
+            <td class="num-val" style="font-family:monospace;">8,000,000</td>
+          </tr>
+          <tr>
+            <td>💻 MacBook CapEx (Month 1/36)</td>
+            <td><span class="badge-debit">DEBIT</span> Exp:Depr_Amort (+₹3,000)</td>
+            <td><span class="badge-credit">CREDIT</span> Asset:Fixed_Laptop (-₹3,000)</td>
+            <td class="num-val" style="font-family:monospace;">30,000,000</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Magic Natural Language Command Pill -->
+<div class="magic-bar">
+  <span style="font-size:1.3rem;">🎙️</span>
+  <input class="magic-input" id="nl-input" placeholder="Try typing: 'Spent 250 on Coffee via SBI' or 'Pay 500 to HDFC CC'..." />
+  <button class="btn-action" onclick="runNaturalCommand()">Magic Post ✨</button>
+</div>
+
+<script>
+  let safeBalance = 1450;
+  let bankBalance = 64250;
+  let foodBalance = 4850;
+  let isPrivate = false;
+
+  function setMode(mode) {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + mode).classList.add('active');
+    const speech = document.getElementById('mascot-speech');
+    if (mode === 'kid') {
+      document.getElementById('orb-label').innerText = "🌈 TODAY'S POCKET TREASURE";
+      document.getElementById('jar1-name').innerText = "🐷 Giant Piggy Vault";
+      document.getElementById('jar2-name').innerText = "🐉 Borrowed Dragon Coins";
+      document.getElementById('jar3-name').innerText = "🍭 Yummy Treats Jar";
+      document.getElementById('ledger-title').innerText = "✨ Magic Coin Trail (Where Every Coin Flew!)";
+      speech.innerText = "Yay! Sprout Mode! Drag coins into jars to save for your next big toy! 🧸";
+    } else if (mode === 'zen') {
+      document.getElementById('orb-label').innerText = "SAFE-TO-SPEND TODAY";
+      document.getElementById('jar1-name').innerText = "SBI Savings Bank";
+      document.getElementById('jar2-name').innerText = "HDFC Credit Card";
+      document.getElementById('jar3-name').innerText = "Food & Dining";
+      document.getElementById('ledger-title').innerText = "⚡ Smart Activity & Auto-Balanced Feed";
+      speech.innerText = "Zen Mode active! Everything is clean, simple, and automatically balanced. ✨";
+    } else {
+      document.getElementById('orb-label').innerText = "LIQUIDITY-ADJUSTED DAILY OPEX ALLOWANCE";
+      document.getElementById('jar1-name').innerText = "1010 • Asset:Bank:SBI_Checking";
+      document.getElementById('jar2-name').innerText = "2010 • Liability:CC:HDFC_Regalia";
+      document.getElementById('jar3-name').innerText = "5020 • Expense:OpEx:Food_Dining";
+      document.getElementById('ledger-title').innerText = "📊 Strict Double-Entry Journal Inspector (ACID Micro-Units)";
+      speech.innerText = "CA Pro Mode: Inspecting raw 64-bit micro-unit postings & FIFO lots. 🧐";
+    }
+  }
+
+  function togglePrivacy() {
+    isPrivate = !isPrivate;
+    const mascot = document.getElementById('mascot');
+    mascot.classList.toggle('peekaboo', isPrivate);
+    document.querySelectorAll('.num-val').forEach(el => el.classList.toggle('blur-num', isPrivate));
+    document.getElementById('mascot-speech').innerText = isPrivate
+      ? "🙈 Peekaboo! My eyes are covered and all your numbers are hidden!"
+      : "👀 Back again! Your balances are visible.";
+  }
+
+  function spendSampleCoin() {
+    safeBalance -= 150;
+    bankBalance -= 150;
+    foodBalance += 150;
+    document.getElementById('safe-val').innerText = '₹' + safeBalance.toLocaleString();
+    document.getElementById('jar1-val').innerText = '₹' + bankBalance.toLocaleString();
+    document.getElementById('jar3-val').innerText = '₹' + foodBalance.toLocaleString();
+    const tbody = document.getElementById('ledger-rows');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>🪙 Quick Orb Coin Drop</td>
+      <td><span class="badge-debit">DEBIT</span> Expense:Treats (+₹150)</td>
+      <td><span class="badge-credit">CREDIT</span> Asset:SBI_Bank (-₹150)</td>
+      <td class="num-val" style="font-family:monospace;">1,500,000</td>`;
+    tbody.prepend(tr);
+    document.getElementById('mascot-speech').innerText = "Clink! 🪙 ₹150 moved from Bank Jar to Treats Jar in 0.4ms!";
+  }
+
+  function runNaturalCommand() {
+    const input = document.getElementById('nl-input');
+    const text = input.value.trim() || "Spent 250 on Coffee via SBI";
+    const match = text.match(/(\d+)/);
+    const amt = match ? parseInt(match[1], 10) : 250;
+    safeBalance -= amt;
+    bankBalance -= amt;
+    foodBalance += amt;
+    document.getElementById('safe-val').innerText = '₹' + safeBalance.toLocaleString();
+    document.getElementById('jar1-val').innerText = '₹' + bankBalance.toLocaleString();
+    document.getElementById('jar3-val').innerText = '₹' + foodBalance.toLocaleString();
+    const tbody = document.getElementById('ledger-rows');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>✨ ${text}</td>
+      <td><span class="badge-debit">DEBIT</span> Expense:Auto (+₹${amt})</td>
+      <td><span class="badge-credit">CREDIT</span> Asset:SBI_Bank (-₹${amt})</td>
+      <td class="num-val" style="font-family:monospace;">${(amt * 10000).toLocaleString()}</td>`;
+    tbody.prepend(tr);
+    input.value = "";
+    document.getElementById('mascot-speech').innerText = `Booked ₹${amt} with strict double-entry precision! 🎉`;
+  }
+</script>
+</body>
+</html>
