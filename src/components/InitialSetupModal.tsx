@@ -28,6 +28,15 @@ export const InitialSetupModal: React.FC<InitialSetupModalProps> = ({
   const [bankStr, setBankStr] = useState(currentBank ? String(currentBank) : '');
   const [ccStr, setCcStr] = useState(currentCC ? String(currentCC) : '');
 
+  // Synchronize state when modal is opened
+  React.useEffect(() => {
+    if (isOpen) {
+      setCashStr(currentCash ? String(currentCash) : '');
+      setBankStr(currentBank ? String(currentBank) : '');
+      setCcStr(currentCC ? String(currentCC) : '');
+    }
+  }, [isOpen, currentCash, currentBank, currentCC]);
+
   if (!isOpen) return null;
 
   const handleQuickAdd = (type: 'cash' | 'bank', add: number) => {
