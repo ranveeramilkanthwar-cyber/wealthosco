@@ -1,0 +1,188 @@
+MASTER DESIGN SYSTEM, 120FPS ANIMATION ENGINE & CA ARCHITECTURAL BLUEPRINTWEALTH-OS v4.0: CHILD-SIMPLE AESTHETICS MEETS SILENT CHARTERED ACCOUNTANTFeaturing Tactile Glassmorphism, 3D Squircle Companion Mascot, Physics Coin Drops, Cinematic Intro, Biometric Zero-Knowledge Auth, Progressive Disclosure Tiers & Full Double-Entry Ledger Core
+DESIGN PARADIGMTactile Playful Luxury (3D + Glass)
+USABILITY TARGETAge 7 Child to Senior CA / CFO
+ANIMATION ENGINE120fps Reanimated 3 + Rive + Skia
+ACCOUNTING CORE64-Bit Micro-Unit Double-Entry
+
+Part 1: The 'Child-Simple Surface, CA Core' Design Philosophy
+Traditional accounting software (Tally, QuickBooks, GnuCash) looks like an intimidating 1990s spreadsheet, causing immediate anxiety for normal users. Conversely, cute expense trackers fail miserably at real financial math. WealthOS v4.0 bridges this gap using 'Progressive Disclosure' and 'Tactile Playful Luxury'—combining the joyful, toy-like physical feedback of Duolingo and Nintendo Switch with the sleek glassmorphic depth of Apple VisionOS and Wise.
+1.1 The 3-Tier Progressive Disclosure Switcher (One App, Three Worlds)
+At any moment, the user (or family member) can toggle the interface complexity mode with a single liquid morphing switch in the top header—while the underlying SQLite double-entry database remains 100% identical:
+Tier 1: Sprout / Play Mode (Child & Beginner Default): Designed for an 8-year-old child or absolute beginner. Zero financial jargon. No words like 'Debit', 'Credit', 'Liability', or 'Amortization'. Everything is represented as physical 3D Piggy Jars, glowing Jellybeans, and drag-and-drop coins. Spending ₹200 on Ice Cream shows 2 golden coins flying out of the 'Pocket Money Jar' into the 'Yummy Treats Jar'.
+Tier 2: Zen Smart Mode (Everyday Consumer): Designed for everyday adults and college students. Clean glassmorphic cards, dynamic 'Safe-to-Spend Today' liquid orb, 1-tap natural language voice bar, visual split-bill avatars, and automatic bank SMS categorization.
+Tier 3: CA Pro / Architect Terminal: Designed for power users, freelancers, and Chartered Accountants. Unlocks T-account journal inspection, raw Debit/Credit ledger legs, FIFO tax-lot harvesting tables, Newton-Raphson XIRR curves, Monte Carlo probability cones, and 1-click Schedule III Balance Sheet exports.
+1.2 The 3D Interactive Companion Mascot ('Botosi / Finny')
+Living in the corner of the dashboard (and expandable into a voice orb) is a soft, curvy 3D squircle furry companion with expressive eyes and tiny stubby hands and feet, rendered in real-time at 120fps via Rive / Three.js:
+Happy & Compounding State: When your 'Safe-to-Spend' is healthy and savings rate is >20%, the mascot has a warm mint-gold aura, bounces softly to a breathing spring rhythm, and gives a tiny high-five when you log income.
+CA Spectacles Mode (Impulse Protection): When you open the 'Impulse Vault' for an expensive purchase, the mascot puts on tiny Chartered Accountant spectacles, holds a mini abacus, and gently tilts its head to ask: 'Do we really need this today, or should we let it grow?'
+Privacy Peekaboo State: When you type a password or enable Privacy Blur in public, the mascot physically covers its eyes with its stubby hands (peeking through one finger if you tap 'Show Balance').
+Sleepy Night Mode: After 10 PM, the mascot yawns, dims its glow, and curls into a sleepy squircle cushion.
+1.3 Color Palette, Typography & Sensory Design System
+Design Token
+Daylight 'Alabaster Clay' Theme
+Midnight 'Obsidian Aurora' Theme
+Psychological & UI Role
+Primary Canvas
+#F8FAFC (Warm Frosted Alabaster)
+#090D16 (Deep Space Obsidian)
+Zero eye strain, high contrast depth
+Glass Card Surface
+rgba(255,255,255,0.78) + 24px Blur
+rgba(30,41,59,0.65) + 28px Blur
+Tactile frosted acrylic elevation
+Wealth / Inflow
+#10B981 (Lush Mint Emerald)
+#34D399 (Bioluminescent Mint)
+Triggers calm dopamine on savings growth
+Safe-to-Spend Orb
+#6366F1 -> #8B5CF6 (Iris Gradient)
+#818CF8 -> #C084FC (Neon Nebula)
+Central interactive daily allowance focal point
+Warning / Creep
+#F59E0B (Warm Honey Amber)
+#FBBF24 (Solar Amber)
+Non-judgmental alert for 80% budget cap
+Outflow / Debt Alert
+#F43F5E (Soft Coral Rose)
+#FB7185 (Vibrant Rose)
+Urgent attention without inducing panic
+Typography System
+Plus Jakarta Sans + JetBrains Mono
+Plus Jakarta Sans + JetBrains Mono
+Rounded friendly headers + tabular-nums math
+
+Part 2: Cinematic Intro, Gamified Onboarding, Login & Registration Flows
+First impressions determine whether a user trusts an app with their life savings. WealthOS replaces boring forms with an interactive, story-driven 60-second experience.
+2.1 The 3-Second Launch & Interactive Story Intro
+1. Physics Splash Sequence (0.0s - 1.5s): Upon cold boot, a single glowing golden coin drops from the top of the screen with realistic gravity, bounces off a soft 3D squircle trampoline, and morphs into the liquid WealthOS emblem while emitting a subtle, crisp acoustic marimba chime and a soft hardware haptic tap.
+2. Interactive 3-Slide Story Carousel: Instead of static text slides, the user swipes through 3 interactive mini-playgrounds:   • Slide 1 ('See Where Money Goes'): The user drags a floating Coffee Cup icon onto a plate; instantly, a hidden curtain pulls back showing how the silent CA engine balances your bank and food jars automatically.   • Slide 2 ('Time-Travel Your Wealth'): A tactile slider lets the user slide from 'Age 20' to 'Age 30', watching a 3D tree sprout golden fruit as compound interest grows.   • Slide 3 ('100% Yours, Offline & Locked'): The user taps a 3D titanium vault door that slams shut with a heavy bass thud haptic, illustrating local-first SQLCipher privacy.
+2.2 Zero-Jargon 'Choose Your Vibe' Registration Flow
+Step 1: Conversational Greeting: No email or phone number is required to start (100% local-first sovereign mode). The mascot asks: 'What should I call you?' As the user types their name, each letter pops in with a bouncy spring animation.
+Step 2: Avatar & Vibe Selection: The user picks their 3D companion style (Furry Mint Squircle, Golden Shiba Cube, Cyber Koala, or Minimalist Crystal Orb) and selects their UI Tier ('Playful Sprout', 'Everyday Zen', or 'CA Pro').
+Step 3: 10-Second 'Tap Your Bubbles' Setup: Instead of asking 'Configure Chart of Accounts', the screen shows floating 3D bubbles ('Pocket Cash', 'UPI / Bank', 'Piggy Savings', 'Food & Snacks', 'Shopping'). The user simply taps the bubbles they want, and they pop into their personal wallet tray. Behind the scenes, the engine initializes the complete UUID Chart of Accounts (`ASSET`, `LIABILITY`, `EQUITY`, `INCOME`, `EXPENSE`).
+2.3 Biometric Vault Login & Decoy Panic PIN
+1. Peekaboo Biometric Unlock: Returning users are greeted by the 3D mascot covering its eyes. The moment FaceID / TouchID / Windows Hello succeeds, the mascot uncovers its eyes with a joyful smile, the titanium vault ring rotates 90 degrees with a mechanical click haptic, and the dashboard cards cascade into view.
+2. Tactile Liquid PIN Pad: A 6-digit tactile frosted-glass keypad where each button depresses 4px on touch with custom acoustic water-drop pitch progression (each digit plays a slightly higher musical note).
+3. Duress / Decoy Wallet PIN (Sovereign Security Addon): Users can configure a secondary 'Decoy PIN' (e.g., if forced to unlock the phone or showing the app to a nosy friend). Entering the Decoy PIN opens a completely believable, pre-populated sandbox database showing only ₹1,450 in pocket money and harmless coffee transactions, keeping real net worth and investments 100% invisible.
+Part 3: Everywhere Animations, Micro-Interactions & Physics Engine
+Every pixel in WealthOS responds to touch with physical mass, momentum, and spring elasticity. Nothing ever 'jumps' or cuts abruptly.
+UI Component / Action
+Visual Animation & Physics Spec
+Spring / Shader Parameters
+Sensory Audio & Haptic Feedback
+Logging an Expense (Coin Drop)
+User drags a category coin into a merchant slot; coin arcs along a cubic Bezier path and splashes into the category jar.
+stiffness: 320, damping: 22, mass: 0.9
+Crisp metallic coin clink + Medium Impact Haptic
+Safe-to-Spend Liquid Orb
+A Skia 2D metaball fluid simulation inside a glass sphere that sloshes when the phone tilts (gyroscope linked).
+Wave viscosity: 0.85, Tilt multiplier: 1.4x
+Subtle liquid slosh on shake + Soft Tick Haptic
+Number Rolling Odometer
+Balances never snap; each digit rolls vertically on an independent physics wheel with motion blur.
+Duration: 450ms, Easing: cubic-bezier(0.16, 1, 0.3, 1)
+Rapid mechanical watch-crown micro-ticks
+Credit Card 3D Flip & Tilt
+Cards respond to finger drag with 3D perspective tilt and holographic foil specular glare shader.
+Max tilt: 15 deg, Glare opacity: 0.35
+Soft card-slide friction haptic
+Split-Bill Pizza Slicer
+A circular pie/pizza graphic where dragging fingers slices the bill into N equal or custom wedges for friends.
+Snap angle: 15 deg, Elastic bounce on slice
+Playful 'slice' swoosh + Rigid Snap Haptic
+Budget Cap Breach (>80%)
+The category progress bar develops a gentle pulsing amber heartbeat glow and tiny rising steam particles.
+Pulse period: 1.8s, Scale: 1.0 -> 1.03
+Double soft warning pulse
+Goal 100% Completion
+Full-screen 3D confetti cannon + mascot does a 360-degree backflip + golden trophy badge mints onto shelf.
+Particle count: 140, Gravity: 9.8m/s²
+Triumphant major-chord harp arpeggio + Heavy Success Haptic
+Privacy Shake-to-Hide
+Shaking the device or double-tapping with two fingers instantly frosts all numbers into shimmering星sparkles.
+Blur radius: 0px -> 18px in 180ms
+Quick shutter click haptic
+
+Part 4: Screen-by-Screen UI/UX Blueprint (Beginner to CA Mapping)
+How every complex Chartered Accountant feature from our core engine is disguised as an effortless, joyful interaction:
+4.1 The Home Bento Dashboard ('The Living Money Garden')
+1. Centerpiece — The Safe-to-Spend Liquid Orb: At the top center sits the glowing 'Today's Pocket Power' orb showing a single big, friendly number (e.g., '₹1,250 Free to Spend Today'). A child or beginner immediately knows: 'If I stay inside this bubble today, I am 100% safe!' Tapping the orb expands the formula breakdown (Liquid Cash minus upcoming bills minus credit card dues divided by remaining days).
+2. Horizontal 3D Wallet Carousel: Accounts are shown as tactile horizontal 3D cards (Bank Wallets, Piggy Jars, Credit Cards). Swiping a coin from 'SBI Bank' to 'HDFC Credit Card' visually animates a bridge connecting the two cards—teaching the user visually that paying off a credit card is a transfer, not an expense.
+3. The Magic Voice & Natural Language Pill: A persistent floating glass pill at the bottom. You can tap the microphone and say: 'Bought 250 rupees mango ice cream from UPI', or type 'Split 900 pizza with Rohan'. As you speak, cute 3D icon tokens (🍦 Mango Ice Cream, 💸 ₹250, 🏦 UPI) pop up above the bar in real-time before you even hit send!
+4.2 The 'Time-Machine Toy' (CapEx Depreciation & Loan Prepayment Simulator)
+CapEx 'Spread the Big Toy' Toggle: When a user logs a ₹90,000 Laptop or Gaming Console, the mascot pops up: 'Whoa, big treasure! Will you use this for 3 years?' Flipping the 'Spread Over Time' switch turns the ₹90,000 spike into 36 tiny monthly blocks of ₹2,500, showing a live battery bar of remaining warranty and daily cost-per-use (₹82/day).
+Loan Prepayment 'Time-Shaver Slider': Instead of an intimidating amortization table, the user sees a 3D 'Debt Monster' or a 'Freedom Finish Line' calendar. Dragging a slider labeled 'Add Extra ₹5,000/month' visually shrinks the monster and makes 18 monthly calendar pages fly off the screen like autumn leaves, displaying: 'You just saved ₹1,42,000 in bank interest and became free 1.5 years early!'
+4.3 The 'Ice Cube Vault' (72-Hour Impulse Cooling-Off Safeguard)
+Visualizing Opportunity Cost: Want to buy ₹6,000 sneakers on impulse? Drop them into the 'Ice Cube Vault'. The app freezes the sneakers inside a 3D translucent ice block on your home screen. Over 72 hours, the ice slowly melts. Beside the ice cube, a 'Future Tree' shows that those ₹6,000 sneakers would grow into ₹18,635 in 10 years if invested instead. If you cancel the purchase after 72 hours, the ice shatters into golden coins that fly straight into your Investment Jar!
+Part 5: New Addon Modules (Kids Mode, Gamification, Widgets & Audio)
+Module 11: 'WealthOS Junior' — Kids & Teen Pocket-Money Academy
+11.1 Automated Allowance & Chore Quests: Parents can create sub-ledgers for children within the family group. Allowances auto-disburse every Sunday morning with a celebratory fanfare.
+11.2 'Parent-Matched' Compound Interest Piggy Bank: Parents can set a 'Parent Match' rule (e.g., 'For every ₹100 you keep in your Savings Jar until month-end, Mom/Dad's ledger automatically matches 10%'). This teaches children real compound interest and delayed gratification at age 8.
+11.3 Kid-Friendly Work/Chore Converter: Children see every toy or game price automatically converted into 'Chores' or 'Weeks of Allowance', while adults see prices converted into 'Hours of Net Office Work'.
+Module 12: Wealth Garden & Collectible Financial Milestones
+12.1 Isometric 3D Wealth Island: Every positive financial habit (staying under Safe-to-Spend, logging expenses for 7 days straight, keeping Credit Utilization below 30%, harvesting tax losses) waters a 3D isometric 'Wealth Island' on the profile tab.
+12.2 Tactile Gyroscope Trophy Case: Unlocking real financial milestones (e.g., '1 Month Emergency Runway Achieved', 'Zero High-Interest Debt', 'First ₹1L Invested') mints 3D metallic badges that sit in a tactile trophy case you can tilt with your phone's gyroscope.
+Module 13: Interactive Home Screen Widgets, Dynamic Island & Watch Companion
+13.1 Lock Screen & Dynamic Island Live Activity: Live iOS Dynamic Island and Android Lock Screen widgets showing your real-time 'Safe-to-Spend Today' bubble and a 1-tap voice log button—log expenses in 1.5 seconds without even opening the app.
+13.2 1-Tap Interactive Notification Cards: When a bank SMS arrives, an interactive notification slides down showing the mascot holding the parsed receipt ('₹420 at Swiggy -> Food Jar') with a single 'Looks Good 👍' or 'Split It 🍕' button.
+Part 6: The Underlying Chartered Accountant & Financial Analyst Core
+Beneath the playful 120fps animations, every single rule from the enterprise specification remains strictly enforced without compromise:
+CORE INVARIANT GUARANTEE: Whether a 7-year-old drags a 3D ice-cream coin in Sprout Mode or a CA imports a 5,000-line bank CSV in Pro Mode, both actions execute the exact same ACID SQLite transaction in `ledger_postings` using 64-bit BigInt micro-units (1 unit = 10,000 micro-units) where Sum(Debits) == Sum(Credits).
+
+Core Engine Module
+Mathematical / Accounting Rule
+Child / Beginner UI Surface
+CA Pro Terminal View
+Double-Entry Ledger
+Assets = Liabilities + Equity + (Income - Expenses)
+Coins moving between two 3D jars
+Balanced Debit & Credit journal table
+64-Bit Micro-Units
+BigInt scaled x10,000 + Banker's Rounding
+Clean rounded ₹ / $ numbers
+4-decimal micro-unit audit inspector
+Credit Card Engine
+Swipe = Liability; Bill Pay = Asset->Liability Transfer
+'Card Shield' bar + best card to swipe tip
+Unbilled vs Statement Cycle State Machine
+Splitwise & Graph Debt
+Min-Cash-Flow greedy heap (N-1 payments)
+Interactive Pizza Slicer with friend avatars
+Accounts Receivable ledger & net graph matrix
+Portfolio XIRR & FIFO
+Newton-Raphson solver + FIFO capital gains lots
+'Growth Speedometer' (% per year)
+Lot-wise STCG/LTCG table & XIRR cashflow array
+Tax Regime Optimizer
+Parallel Old vs New Tax Regime computation
+'Tax Piggy Saver' progress bar
+Section 80C/80D/HRA deduction schedule & export
+Monte Carlo Forecast
+1,000-run stochastic daily spend simulation
+'Weather Forecast' (Sunny vs Rainy Month)
+90-day P10 / P50 / P90 confidence fan chart
+
+Part 7: Step-by-Step Build & Animation Verification Roadmap
+Phase 1: Deterministic Double-Entry SQLite Core & Micro-Unit Math
+Build Scope: Build accounts, transactions, ledger_postings, fixed_assets, and investment_lots tables. Implement ACID TransactionService and UnbalancedLedgerError.
+Verification Gate: Checkpoint 1: Pass 10,000 randomized journal entries with zero floating-point drift.
+Phase 2: Design System Tokens, Theme Engine & 120fps Physics Primitives
+Build Scope: Implement Alabaster Clay (Light) and Obsidian Aurora (Dark) themes, glassmorphic cards, spring button wrappers, Odometer number ticker, and Haptic/Sound manager.
+Verification Gate: Checkpoint 2: Verify 60/120fps frame timing with zero dropped frames during rapid number rolling and theme morphing.
+Phase 3: Cinematic Intro, Interactive Onboarding & Biometric Peekaboo Auth
+Build Scope: Build Physics Coin Splash, 3-Slide Interactive Story, 'Tap Your Bubbles' zero-jargon Chart of Accounts setup, 3D Mascot controller, and Decoy PIN vault.
+Verification Gate: Checkpoint 3: Complete onboarding from cold launch to first logged transaction in under 45 seconds without typing a single accounting term.
+Phase 4: Bento Dashboard, Safe-to-Spend Liquid Orb & Magic Voice Pill
+Build Scope: Build the gyroscope-reactive Safe-to-Spend orb, 3D tilt wallet carousel, Sprout/Zen/CA-Pro mode switcher, and Natural Language tokenizing command bar.
+Verification Gate: Checkpoint 4: Toggle between Child Mode, Zen Mode, and CA Pro Mode in real-time and assert 100% identical net worth and account balances.
+Phase 5: Interactive Pizza Bill-Splitter, Credit Card Optimizer & Time-Shaver Loan Slider
+Build Scope: Connect the Min-Cash-Flow graph simplifier to the radial Pizza Slicer UI, build the Credit Card grace-period recommender, and wire the interactive EMI prepayment slider.
+Verification Gate: Checkpoint 5: Slice a ₹3,000 dinner 3 ways with partial UPI payback and verify personal food budget only increments by ₹1,000.
+Phase 6: SMS/Receipt OCR Ingestion, Ice Cube Impulse Vault & Wealth Island Gamification
+Build Scope: Wire SHA-256 deduplicated SMS parser, line-item receipt splitter, 72-hour melting Ice Cube vault, and 3D isometric Wealth Island milestones.
+Verification Gate: Checkpoint 6: Feed 50 real bank SMS alerts and OTPs; verify 0% false positives on OTPs and instant 1-tap interactive notification rendering.
+Phase 7: Portfolio XIRR, FIFO Tax Harvester, Monte Carlo Weather & 1-Click CA Export
+Build Scope: Connect Newton-Raphson XIRR, FIFO lot tracker, Old vs New Tax comparator, and generate password-protected PDF/Excel Balance Sheet & P&L bundles.
+Verification Gate: Checkpoint 7: Cross-check XIRR and Balance Sheet outputs against Microsoft Excel formulas to 4 decimal places.
+Part 8: Master AI Coding Agent Prompt (Copy-Paste Blueprint)
+COPY-PASTE INTO .CURSORRULES OR CLAUDE CODE:# ROLE: STAFF FINTECH ARCHITECT + APPLE DESIGN AWARD UI/UX ENGINEERYou are building WealthOS v4.0: a local-first Personal Finance & Chartered Accountant Engine with a 'Child-Simple Surface and CA-Grade Core'.## MANDATORY DUAL-PILLAR RULES:1. UNCOMPROMISING CA MATH: Store all money in 64-bit BigInt micro-units (1 unit = 10,000). Every action (Expense, Income, Transfer, Credit Card Payoff, Split Bill, CapEx) MUST compile into balanced Debit == Credit rows in `ledger_postings` inside an ACID transaction.2. 3-TIER PROGRESSIVE DISCLOSURE: Every screen must support the global `uiMode` state ('SPROUT_KID' | 'ZEN_SMART' | 'CA_PRO'). In SPROUT_KID and ZEN_SMART modes, never expose accounting jargon; use 3D Jars, Safe-to-Spend Liquid Orb, and visual metaphors.3. 120FPS PHYSICS & DELIGHT: Every numeric change uses the vertical rolling Odometer. Every button, card, and coin drag uses spring physics (stiffness: 300, damping: 22) paired with subtle acoustic & haptic feedback.4. COMPANION MASCOT STATE MACHINE: Wire the 3D Squircle Companion ('Botosi/Finny') to react live to financial health (Happy glow on >20% savings, CA Spectacles on Impulse Vault, Peekaboo eyes on Password/Privacy mode).

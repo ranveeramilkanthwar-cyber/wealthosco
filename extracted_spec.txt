@@ -1,0 +1,376 @@
+ENTERPRISE FINTECH ENGINE & PERSONAL WEALTH OS
+Architectural Specification, Double-Entry Core, Advanced Algorithms, Multi-Account Aggregation & Master AI Implementation Plan
+DOCUMENT VERSION3.0 Production Master
+TARGET STACKLocal-First CRDT, SQLite, FastAPI, TypeScript
+DOMAIN SCOPECA Bookkeeping, Wealth Ops, Tax & Portfolio Math
+
+Executive Summary & Core Paradigm Shift
+Current personal finance apps universally fail power users and everyday consumers alike because they treat money as a superficial flat-file list of isolated numbers (+₹500 or -₹200). In reality, real money moves through an interconnected multi-legged economic web. A payment of a credit card bill is never an expense—it is a debt liquidation transfer. Buying a ₹1,50,000 MacBook is not a lifestyle burn of ₹1.5L in a single afternoon—it is a Capital Expenditure (CapEx) converting liquid cash into a fixed asset that depreciates across 36 months of productive economic utility.
+This master document defines the complete technical, mathematical, and algorithmic architecture for an institutional-grade Personal Wealth Operating System (WealthOS). Operating as a silent Chartered Accountant under the hood, it pairs strict double-entry balance enforcement and micro-unit integer precision with natural language processing, automated multi-channel ingestion, local-first offline synchronization, multi-asset portfolio accounting (XIRR/FIFO), and predictive behavioral economics.
+ARCHITECTURAL GUARANTEE: The system guarantees zero floating-point drift by standardizing on 64-bit BigInt micro-units (1 currency unit = 10,000 micro-units, or 4 decimal places). All database writes occur within ACID transactions enforcing the Fundamental Accounting Equation at the storage engine level.
+
+Part 1: The Chartered Accountant (CA) & Financial Analyst Domain Core
+1.1 Fundamental Accounting Rules Injected into System Logic
+1. Hidden Double-Entry Bookkeeping Engine: Every single financial event is recorded with at least two ledger legs: a Debit (Destination/Application of funds) and a Credit (Source/Origin of funds). Commits are atomic: if Debits != Credits, the entire transaction rolls back immediately.
+   Invariant:    The Fundamental Accounting Equation is checked on every single journal commit:   Assets = Liabilities + Equity + (Income - Expenses)
+2. Zero Floating-Point Tolerance: Under no circumstances may IEEE 754 floating-point primitives (float, double) be utilized in storage, calculations, or transfers. All currency amounts are represented as 64-bit BigIntegers scaled by 10,000 (paise/cents micro-units) or strict DECIMAL(19,4). Banker's rounding (round half-to-even) is applied solely at final UI rendering boundaries.
+3. Dual Accounting Modes (Cash vs. Accrual Basis): The platform dynamically computes and toggles between dual accounting perspectives:   • Cash Basis: Recognizes transactions strictly when liquid money enters or leaves depository accounts.   • Accrual Basis: Recognizes obligations when incurred (e.g., credit card swipes, postpaid telecom billing) and receivables when invoiced, separating actual economic consumption from cash timing.
+4. CapEx vs. OpEx Separation & Asset Depreciation: High-value purchases above a user-defined threshold (e.g., >₹20,000) are flagged as Capital Expenditures. The engine creates a Fixed Asset account and schedules automated non-cash monthly depreciation schedules (Straight-Line or Written Down Value), insulating monthly burn rates and operating expense analytics from artificial shocks.
+5. Immutable Audit Trail & Compensating Entries: Reconciled financial ledgers are strictly immutable. Correction of an erroneous or modified entry generates a compensating reversal entry with an updated journal counter-entry, coupled with cryptographic hash chaining in the audit_logs table.
+1.2 Financial Analyst Institutional KPIs & Alert Triggers
+The dashboard elevates personal finance to corporate treasury standards, calculating real-time institutional financial health metrics:
+Metric / Institutional KPI
+Financial Formula
+Analyst Interpretation & Alert Triggers
+Savings Rate (%)
+((Net Income - Total OpEx) / Net Income) * 100
+Target > 20%. Warns of lifestyle creep if declining over 3 consecutive rolling monthly windows.
+Liquidity Runway
+(Liquid Cash + Cash Equivalents) / (3-Month Rolling Avg Core OpEx)
+Measures zero-income survival months. Target: 6 to 12 months. Triggers emergency alert if < 3.0.
+Debt-to-Income (DTI)
+(Total Monthly EMIs + Min CC Obligations) / Gross Monthly Income * 100
+Target < 30%. Flags moderate leverage at 30-40%. Enforces debt restructuring protocol if > 40%.
+Personal Burn Velocity
+Delta(Net Worth) / Delta(Time in Days)
+Daily economic velocity indicator. Distinguishes wealth accumulation from capital erosion.
+Real Inflation Return
+[ (1 + R_nominal) / (1 + R_inflation) - 1 ] * 100
+Calculates purchasing power expansion across liquid and fixed asset holdings.
+Working Capital Ratio
+Current Liquid Assets / Current Liabilities Due < 30 Days
+Target > 1.5x. Ensures upcoming credit card and utility cycles never risk overdraft charges.
+Discretionary Ratio
+Discretionary Lifestyle Spend / Total Operating Outflows
+Highlights spending elasticity during economic downturns or savings sprints.
+
+Part 2: Master System Architecture & Modern Tech Stack
+WealthOS is engineered around a local-first, zero-latency reactive architecture. Financial records are stored and processed on the client device first, guaranteeing instant responsiveness, complete offline capability, and client-side privacy, with optional encrypted multi-device synchronization.
+2.1 Layered Architectural Diagram
+Presentation & Client Layer: React Native (Expo) and Flutter for mobile; Next.js (React 19) wrapped in Tauri for native lightweight Desktop (macOS, Windows, Linux). Built with TailwindCSS and Shadcn/UI.
+Local-First Storage & Offline Sync Engine: Local SQLite engine accessed via raw C-bindings (op-sqlite on mobile, better-sqlite3 on Desktop). State sync powered by CRDTs (Conflict-Free Replicated Data Types) via PowerSync or WatermelonDB. Read queries execute in <2ms.
+Backend & Computational Microservices: High-performance Python (FastAPI with Pydantic v2) or TypeScript (NestJS with Zod). Handles long-running financial jobs: portfolio XIRR, Monte Carlo projections, bank statement ingestion, and tax optimization.
+Intelligent Ingestion & SLM Pipeline: Edge OCR running on-device (Apple Vision framework / MLKit / Tesseract) paired with a fine-tuned Small Language Model (SLM, e.g., Phi-3 Mini or Gemma 2B via ONNX Runtime) for automated bank SMS/email narration parsing.
+Security & Zero-Knowledge Architecture: SQLCipher AES-256 local database encryption with keys sealed inside iOS Keychain / Android Keystore / OS TPM. Zero-Knowledge end-to-end sync encryption (user passphrase never hits sync servers).
+Part 3: Complete Pointwise Database Schema Specification
+The relational data model represents an institutional double-entry chart of accounts adapted for high-speed local querying and audit integrity:
+Table: accounts
+Description: Chart of Accounts (Assets, Liabilities, Equity, Incomes, Expenses)
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique account identifier
+name
+VARCHAR(100) NOT NULL
+Display name (e.g., SBI Checking, HDFC Regalia CC, Dining Out)
+account_type
+ENUM NOT NULL
+'ASSET', 'LIABILITY', 'EQUITY', 'INCOME', 'EXPENSE'
+account_subtype
+ENUM NOT NULL
+'CASH', 'BANK', 'CREDIT_CARD', 'LOAN', 'INVESTMENT', 'FIXED_ASSET', 'RECEIVABLE', 'PAYABLE', 'OPEX', 'CAPEX_AMORT'
+currency
+CHAR(3) NOT NULL
+ISO 4217 standard currency code (default: 'INR' / 'USD')
+balance_micro
+BIGINT NOT NULL DEFAULT 0
+Cached ledger balance in micro-units (sum of postings)
+credit_limit_micro
+BIGINT NULL
+Credit limit for credit cards or overdraft facilities
+billing_cycle_day
+SMALLINT NULL
+Day of month (1-31) when credit statement is generated
+due_day_offset
+SMALLINT NULL
+Number of calendar days after statement date when payment is due
+is_archived
+BOOLEAN DEFAULT FALSE
+Soft-archive flag to preserve historical ledger integrity
+
+Table: transactions
+Description: Journal Header Records (Economic Events)
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique journal transaction ID
+transaction_date
+TIMESTAMP WITH TZ NOT NULL
+Timestamp when the economic action occurred
+posted_date
+TIMESTAMP WITH TZ NOT NULL
+Timestamp when the financial institution settled the transaction
+description
+VARCHAR(255) NOT NULL
+Clean user note or resolved merchant entity
+raw_narration
+TEXT NULL
+Raw, unmodified bank notification string for debugging & re-parsing
+transaction_type
+ENUM NOT NULL
+'EXPENSE', 'INCOME', 'TRANSFER', 'SPLIT', 'REFUND', 'CAPEX_DEPRECIATION', 'ADJUSTMENT'
+status
+ENUM NOT NULL
+'PENDING', 'CLEARED', 'RECONCILED', 'VOID'
+merchant_id
+UUID NULL FK(merchants.id)
+Normalized merchant reference
+project_or_event_id
+UUID NULL FK(projects.id)
+Optional allocation tag (e.g., 'Japan Vacation 2026', 'Flat Renovation')
+is_tax_deductible
+BOOLEAN DEFAULT FALSE
+Tax classification flag
+tax_category_code
+VARCHAR(50) NULL
+Regulatory tax deduction section (e.g., '80C', '80D', 'HRA', 'GST_INPUT')
+deduplication_hash
+CHAR(64) UNIQUE NOT NULL
+SHA-256 hash of (account_id + amount + timestamp_min + reference_no)
+attachment_urls
+JSONB NOT NULL DEFAULT '[]'
+Array of encrypted local file paths/URLs for invoices, receipts & warranties
+
+Table: ledger_postings
+Description: Double-Entry Balanced Journal Lines
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique ledger posting line ID
+transaction_id
+UUID NOT NULL FK(transactions.id)
+Foreign key to parent journal transaction
+account_id
+UUID NOT NULL FK(accounts.id)
+Foreign key to affected Chart of Accounts account
+direction
+ENUM('DEBIT', 'CREDIT') NOT NULL
+Posting vector direction
+amount_micro
+BIGINT NOT NULL CHECK (amount_micro > 0)
+Magnitude of transaction in 10,000x micro-units
+exchange_rate
+DECIMAL(14,6) NOT NULL DEFAULT 1.000000
+Spot foreign exchange conversion rate to base currency
+memo
+VARCHAR(150) NULL
+Line-item split description (e.g., 'Cleaning Supplies component of grocery bill')
+
+Table: fixed_assets
+Description: CapEx Capitalization & Amortization Registry
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique asset tracking ID
+account_id
+UUID NOT NULL FK(accounts.id)
+Asset account representing the asset on balance sheet
+purchase_transaction_id
+UUID NOT NULL FK(transactions.id)
+Original purchase journal entry
+initial_cost_micro
+BIGINT NOT NULL
+Capitalized purchase price in micro-units
+salvage_value_micro
+BIGINT NOT NULL DEFAULT 0
+Estimated residual salvage value at end of useful life
+useful_life_months
+INTEGER NOT NULL
+Total duration of amortization/depreciation
+depreciation_method
+ENUM NOT NULL
+'STRAIGHT_LINE', 'WRITTEN_DOWN_VALUE'
+depreciation_rate_percent
+DECIMAL(5,2) NULL
+Annual depreciation rate for WDV method
+warranty_expiry_date
+DATE NULL
+Warranty coverage expiration date
+is_disposed
+BOOLEAN DEFAULT FALSE
+Asset retirement/sale flag
+
+Table: budgets_and_envelopes
+Description: Dynamic Budget Allocation Engine
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique budget allocation entry ID
+category_account_id
+UUID NOT NULL FK(accounts.id)
+Expense category account tied to budget
+period_start
+DATE NOT NULL
+Start date of budget envelope window
+period_end
+DATE NOT NULL
+End date of budget envelope window
+budget_methodology
+ENUM NOT NULL
+'ZERO_BASED', 'PERCENTAGE_50_30_20', 'ROLLOVER_ENVELOPE', 'FIXED_CAP'
+allocated_micro
+BIGINT NOT NULL
+Budget envelope funding limit in micro-units
+rollover_from_previous_micro
+BIGINT NOT NULL DEFAULT 0
+Surplus/deficit rolled over from previous billing cycle
+alert_threshold_percent
+INTEGER NOT NULL DEFAULT 80
+Notification threshold percentage (e.g., alert at 80% consumption)
+
+Table: recurring_and_subscriptions
+Description: Cash-Flow Automation & Creep Detection
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique subscription record ID
+template_transaction_json
+JSONB NOT NULL
+Serialized journal posting payload to instantiate on trigger
+cron_expression
+VARCHAR(50) NOT NULL
+Standard 5-part cron syntax for recurring schedule
+auto_execute
+BOOLEAN DEFAULT FALSE
+Auto-post without prompt vs. generating a 1-tap confirmation notification
+expected_amount_micro
+BIGINT NOT NULL
+Benchmark micro-unit cost for price hike detection
+last_billed_amount_micro
+BIGINT NULL
+Amount charged on the most recent cycle
+price_hike_detection
+BOOLEAN DEFAULT TRUE
+Flag to trigger warning if recurring debit exceeds historical mean
+cancellation_reminder_date
+DATE NULL
+Trigger date to notify user 3 days prior to auto-renewal
+
+Table: investment_lots
+Description: FIFO Lot Accounting for Equities & Mutual Funds
+Column Name
+Data Type & Constraints
+Architectural Intent
+id
+UUID PRIMARY KEY
+Unique tax lot ID
+account_id
+UUID NOT NULL FK(accounts.id)
+Investment holding account
+asset_symbol
+VARCHAR(20) NOT NULL
+Ticker or ISIN code (e.g., 'RELIANCE', 'INFY', 'VOO')
+purchase_date
+DATE NOT NULL
+Lot acquisition timestamp
+units_micro
+BIGINT NOT NULL
+Quantity acquired scaled by 10,000 micro-units
+cost_per_unit_micro
+BIGINT NOT NULL
+Acquisition cost per unit in micro-units
+remaining_units_micro
+BIGINT NOT NULL
+Unliquidated balance in lot available for redemption
+is_tax_advantaged
+BOOLEAN DEFAULT FALSE
+ELSS / 401(k) / IRA status
+
+Part 4: Deep Technical Implementation Plan for Core & New Addon Modules
+Module 1: The Transaction & Ledger Core (Error-Proof Accounting)
+1.1 Self-Balancing Entry Generator: When a user records a simple purchase ('₹350 for Books via SBI UPI'), the service layer resolves the counter-parties: Debit -> Expense:Education:Books (350), Credit -> Asset:Bank:SBI_Account (350). When paying a credit card bill, the system intercepts the action to prevent double-counting: Debit -> Liability:HDFC_CreditCard, Credit -> Asset:Bank:Savings.
+1.2 Refunds, Cashbacks & Chargebacks Handler: Implements strict distinction between Direct Expense Reversals (which decrement the specific category expense to reflect true consumption) and Promotional Cashbacks (which are recognized as Income:Rewards_Cashback to maintain gross expense audit trails).
+1.3 Multi-Currency & Forex Engine: Handles multi-currency transactions with precision. Every line records original_currency, original_amount_micro, exchange_rate, and base_currency_amount_micro. Realized and unrealized forex fluctuations are automatically balanced against Equity:Currency_Translation_Reserve.
+1.4 CapEx Capitalization & Warranty Tracker: For high-value hardware, vehicles, or appliances, CapEx depreciation entries are generated via scheduled cron: Debit -> Expense:Depreciation:Equipment, Credit -> Asset:Fixed:Accumulated_Depreciation. Integrates digital warranty document OCR with alert triggers 30 days before warranty expiration.
+Module 2: Automated Multi-Channel Ingestion & Deduplication
+2.1 Bank Ingestion Pipeline: Ingests transactional SMS strings, email notifications, and bank webhooks using a high-speed cascading pipeline: Fast Regex Patterns -> On-device SLM Classifier. Reconstructs Amount, Sender/VPA, Account Last-4, Direction, and UTR/Reference.
+2.2 Cryptographic Deduplication Hash: Computes a deterministic SHA-256 hash: hash(account_id + amount_micro + timestamp_minute + reference_utr). Matches manual user logs against incoming SMS alerts and bank CSV imports, updating transaction status to RECONCILED rather than creating duplicate entries.
+2.3 Line-Item Receipt OCR & Tax Splitter: Scans supermarket and retail invoices using on-device OCR, parsing individual items into line-item splits. Separates GST/VAT into Tax:GST_Input_Credit and splits disparate categories (e.g., Grocery vs. Pharmacy vs. Electronics) into independent balanced debit legs.
+2.4 Natural Language & Voice Command Bar: Allows multi-legged transaction entry through a single natural language input string (e.g., 'Split 1800 lunch with Alice and Bob on Axis Card, Bob GPayed 600'). Instantly parses and generates the 4-legged journal entry and settlement receivable.
+Module 3: Credit Card, Loan & Debt Optimization Engine
+3.1 Credit Card Cycle State Machine: Maintains an active state machine tracking Unbilled Outstanding vs. Billed Statement Dues. Evaluates card billing cycle days to recommend optimal payment methods for maximum interest-free credit runway (up to 50 days). Issues real-time warnings whenever utilization exceeds 30% of total credit limit.
+3.2 Loan Amortization & Prepayment Simulator: Dynamically calculates principal and interest amortization splits for every loan cycle using the standard annuity formula: EMI = P * [r(1+r)^n] / [(1+r)^n - 1]. Simulates one-time prepayments and annual EMI step-ups, graphing exact months shaved off and interest saved.
+3.3 Debt Avalanche vs. Snowball Engine: Evaluates active debt portfolios across mathematical Avalanche (sorting descending by interest rate to minimize total interest cost) and psychological Snowball (sorting ascending by balance to accelerate milestone completions). Provides optimal monthly surplus allocation recommendations.
+Module 4: Bill Splitting, Group Expenses & Graph Debt Simplification
+4.1 Receivables-Isolated Bill Splitting: Embedded Splitwise capabilities ensuring shared expenses never distort individual operating budgets. When a user pays ₹3,000 for a 3-person meal, ₹1,000 is booked to Expense:Dining and ₹2,000 is booked to Asset:Receivables:Group.
+4.2 Min-Cash-Flow Graph Debt Simplifier: Implements the Min-Cash-Flow graph algorithm on shared group expenses. Given M peer-to-peer debts among N participants, computes net balances and executes a greedy heap-matching algorithm to reduce transactions to at most N - 1 payments, eliminating circular settlements.
+Module 5: Intelligent Budgeting, Forecasting & Behavioral Safeguards
+5.1 Dynamic 'Safe-to-Spend' Allowance: Computes a real-time daily spending limit:Safe-to-Spend Today = [ Liquid Cash - Upcoming Unpaid Fixed Obligations - Savings Lock - Outstanding Statement Dues ] / Remaining Days in Month. Adapts dynamically to month-end crunches.
+5.2 Subscription Vampire & Creep Detector: Periodicity detection algorithms cluster recurring payments to uncover hidden subscription price increases, unused trials, and duplicate memberships.
+5.3 Monte Carlo Cash-Flow Projections: Runs 1,000 Monte Carlo simulations utilizing historical daily spending mean and standard deviation (sigma) to project probability distributions of account balances 90 days out, forecasting overdraft risks before they materialize.
+5.4 Behavioral Work-Hours & Impulse Vault: Converts discretionary prices into net working hours based on user's real post-tax hourly wage. Features an Impulse Vault holding non-essential purchases for 72 hours while visualizing 10-year compounded opportunity costs at 12% CAGR.
+Module 6: Investment, Net Worth & CA Tax Compliance Suite
+6.1 Institutional Portfolio XIRR Engine: Solves for true portfolio return using the Newton-Raphson numerical approximation method across irregular investments, SIPs, dividend payouts, and redemptions.
+6.2 FIFO Capital Gains & Tax-Loss Harvesting: Implements First-In, First-Out (FIFO) tracking across equity and mutual fund lots. Distinguishes Short-Term Capital Gains (STCG) from Long-Term Capital Gains (LTCG) and highlights tax-loss harvesting opportunities prior to fiscal year close.
+6.3 Tax Regime Comparator & Deduction Engine: Computes simultaneous tax liability under Old vs. New Tax Regimes in real-time, mapping deductions under 80C, 80D, HRA, and Section 24b to provide actionable optimization advice.
+6.4 One-Click CA Audit Export Package: Compiles a complete audit package with one click: Personal Balance Sheet, Profit & Loss Statement, Cash Flow Statement (Direct/Indirect), and a Tax Deductions Schedule with hyperlinked receipt attachments.
+Part 5: Advanced Institutional Addon Modules (New Capabilities)
+Module 7: Automated Bank Statement PDF Ingestion & OCR Auto-Reconciliation
+7.1 Institutional PDF Statement Parser: Comprehensive PDF parsing engine that strips password protection (using user's PAN/DOB vault), detects tabular bank statement boundaries, normalizes column variants across 40+ major banking formats, and reconciles transactions against local ledgers.
+7.2 Automated Bank Reconciliation Statement (BRS): Compares bank statement records with manual and SMS entries. Automatically identifies unmatched debits, bank service charges, TDS withholdings, and interest credits, prompting users with one-tap clearing actions.
+Module 8: Multi-Tier Family Wealth & Freelance Business Co-Mingling Engine
+8.1 Personal vs. Business Co-Mingling Protection: Provides clean separation between personal household finances and freelance/sole-proprietorship operations under a unified interface. Automatically separates business travel, client reimbursements, and operational overhead from personal lifestyle spending.
+8.2 Multi-Entity Family & Joint Ledger: Multi-user ledger with permission scoping (Owner, Partner, Accountant, Child). Enables shared household budgets with individual privacy protections and automated allowance disbursements.
+Module 9: AI Financial Advisor & Natural Language CA Copilot
+9.1 Natural Language Query & Reasoning Engine: Context-aware conversational AI assistant trained on double-entry accounting rules and local taxation codes. Users can query in plain English: 'How much did I spend on dining out last quarter compared to groceries?', 'Can I afford a ₹60,000 trip next month?', or 'What is my projected tax liability under the new regime?'.
+9.2 Anomaly & Fraud Pattern Detection: Proactive anomaly detector that flags unusual card charges, accidental double swipes at merchant POS terminals, and unexpected recurring subscription renewals.
+Module 10: Sovereign Privacy, Zero-Knowledge Encryption & Export Portability
+10.1 Zero-Knowledge Sovereign Architecture: 100% data ownership. Local database encrypted with SQLCipher AES-256. Cloud backup (Google Drive, iCloud, self-hosted WebDAV) utilizes client-side Argon2id key derivation so sync servers never see plaintext financial data.
+10.2 Open Format Portability: Complete export freedom with zero vendor lock-in: One-click export to GnuCash (XML), Ledger-CLI / Beancount plain text format, standardized Excel (.xlsx), and CSV.
+Part 6: Step-by-Step Modular Build & Debugging Roadmap
+To ensure structured and error-free execution by an AI coding agent or engineering team, follow this 8-phase implementation roadmap. Each phase concludes with an automated Debug Checkpoint that must pass 100% of unit tests before proceeding.
+Phase 1: Deterministic Double-Entry Engine & Database Layer
+Core Focus: Schema definition, BigInt micro-unit storage, ACID transaction wrappers, fundamental balance validation.
+Key Deliverables: SQLite tables (accounts, transactions, ledger_postings, audit_logs), TransactionService.createJournalEntry(), ledger validation trigger.
+Debug Checkpoint 1: Run automated test suite inserting 10,000 randomized balanced entries. Attempt 1,000 unbalanced transactions and assert 100% trigger immediate UnbalancedLedgerError rollback. Verify Assets = Liabilities + Equity + (Income - Expenses) invariant.
+
+Phase 2: Transaction Variants, Multi-Currency, Splits & Reversals
+Core Focus: High-level domain wrappers (recordExpense, recordIncome, recordTransfer, recordSplit, recordCapEx), deduplication hash, immutable audit trails.
+Key Deliverables: Deduplication SHA-256 hash generator, Forex multi-currency converter, Compensating reversal entries, CapEx amortization engine.
+Debug Checkpoint 2: Simulate a 3-way split dinner with partial UPI repayment, a foreign currency transaction with fluctuating spot rates, and a ₹1,20,000 laptop purchase depreciated over 36 months. Assert ledger consistency across all accounts.
+
+Phase 3: Core UI, Responsive Dashboard & Offline Sync Engine
+Core Focus: Presentation layer, local reactive database bindings, offline CRUD operations, zero-latency state synchronization.
+Key Deliverables: Dashboard with reactive balance cards, Account Wallets view, Interactive Ledger Timeline with multi-tag filtering, Natural Language Command Bar.
+Debug Checkpoint 3: Simulate offline airplane mode: create 50 entries, edit 5, void 2. Reconnect network and verify seamless CRDT sync resolution with 0 merge conflicts and UI render latency under 16ms.
+
+Phase 4: Budgeting, Credit Cards & Debt Optimization Engines
+Core Focus: Envelope budgeting methodologies, credit card billing cycle state machine, loan amortization, debt payoff optimizers.
+Key Deliverables: Dynamic Safe-to-Spend calculator, Credit card statement due tracker, Loan amortization simulator, Debt Avalanche & Snowball optimizer.
+Debug Checkpoint 4: Feed complex multi-card billing cycles (31st-of-month dates, leap years, statement grace periods). Verify Safe-to-Spend never double-counts credit card swipes and statement bill payments. Verify loan amortization formulas against financial tables.
+
+Phase 5: Automated Ingestion Pipelines (SMS, Email, PDF & OCR)
+Core Focus: Automated data ingestion from bank alerts, supermarket receipts, and bank statements.
+Key Deliverables: Regex + on-device SLM parser for transactional bank notifications, Supermarket receipt OCR line-item splitter, Bank statement PDF parser.
+Debug Checkpoint 5: Run test suite of 100 real-world messy bank SMS strings (UPI, NEFT, IMPS, Card Swipes, Declined, OTPs). Assert 0% false positives on OTPs and 100% deduplication against manual logs.
+
+Phase 6: Advanced Analytics, Tax Engines & CA Audit Exports
+Core Focus: Institutional metrics, XIRR calculations, tax regime optimization, professional financial statement generation.
+Key Deliverables: Newton-Raphson XIRR portfolio calculator, FIFO lot tracker for STCG/LTCG, Old vs. New Tax Regime comparator, 1-Click PDF/Excel CA export bundle.
+Debug Checkpoint 6: Cross-verify generated Balance Sheet, P&L, and XIRR outputs against Microsoft Excel formulas (XIRR, SLN, DB). Assert zero discrepancies to 4 decimal places.
+
+Phase 7: Multi-Entity Ledger & Advanced Addon Integrations
+Core Focus: Freelance business separation, family joint accounts, bank statement auto-reconciliation.
+Key Deliverables: Multi-entity account scoping, Bank Reconciliation Statement (BRS) tool, Min-Cash-Flow graph debt simplifier.
+Debug Checkpoint 7: Simulate a shared 10-person trip with 30 inter-dependent debts. Assert Min-Cash-Flow simplifies graph to <= 9 transactions with zero residual balances.
+
+Phase 8: Security Hardening, Zero-Knowledge Vault & Release Polish
+Core Focus: Cryptographic sealing, biometric authentication, SQLCipher AES-256 validation, automated backups.
+Key Deliverables: Argon2id master key derivation, biometric unlock hooks, automated encrypted cloud backup, multi-format export engine.
+Debug Checkpoint 8: Conduct security penetration tests on local storage: verify database is unreadable without hardware key. Verify export/import cycles across GnuCash and Excel formats without data loss.
+
+Part 7: Master System Prompt Header (AI Agent Blueprint)
+To feed this master implementation plan into Cursor, Windsurf, Claude Code, or GitHub Copilot, copy and paste the prompt header below as your project's .cursorrules or MASTER_SPEC.md:
+MASTER AI SYSTEM INSTRUCTION PROMPT:# ROLE & ARCHITECTURAL DIRECTIVEYou are an Elite Staff Fintech Systems Architect and Senior Chartered Accountant (CA) engineering a production-ready, local-first Personal Finance & Enterprise Ledger Engine (WealthOS).## NON-NEGOTIABLE CORE INVARIANTS:1. ZERO FLOATING POINT MATH: Never use float, double, or JS Number division for financial amounts. Store all money as 64-bit BigInt micro-units (1 currency unit = 10,000 micro-units). Apply banker's rounding (round half-to-even) solely at the presentation boundary.2. STRICT DOUBLE-ENTRY ENFORCEMENT: Every financial event must resolve into balanced Debit and Credit postings enforcing sum(Debits) == sum(Credits). Commits violating this invariant must rollback immediately.3. CASH VS. ACCRUAL DUALITY: Distinguish cash movements from economic consumption. Credit card swipes are liability increases, not cash outflows; credit card payments are liability settlements, never operating expenses.4. CAPEX VS. OPEX SEPARATION: Large purchases (>₹20,000) must be capitalizable into fixed assets with automated depreciation schedules (Straight-Line or WDV) and warranty tracking.5. MODULAR ISOLATION & TESTING: Maintain all mathematical, ledger, XIRR, and tax calculation functions in pure, framework-agnostic modules in /core/financial-engine/ with 100% unit test coverage before writing UI components.6. STEPWISE EXECUTION: Execute strictly one phase at a time following the Master Build Roadmap. Complete and pass the designated Debug Checkpoint before commencing subsequent phases.
