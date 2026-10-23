@@ -74,9 +74,9 @@ export const ZenBentoView: React.FC<ZenBentoViewProps> = ({
     localStorage.setItem('wealthos_v4_impulse', JSON.stringify(updated));
   };
 
-  // Find live accounts from ledger
-  const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-  const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD');
+  // Find live accounts from ledger (Robust Matching)
+  const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+  const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD'));
   const foodAcc = accounts.find((a) => a.account_type === 'EXPENSE') || accounts[5];
 
   const accountMap = new Map(accounts.map((a) => [a.id, a]));
