@@ -90,8 +90,8 @@ export const SeniorChildEasyView: React.FC<SeniorChildEasyViewProps> = ({
     { id: 'b2', name: 'Monthly Medicine Strip', amount: 450, dueDate: 'Due next week' },
   ]);
 
-  const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-  const cashAcc = accounts.find((a) => a.account_subtype === 'CASH');
+  const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+  const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
   const totalLiquid = (bankAcc ? bankAcc.balance_micro : 0n) + (cashAcc ? cashAcc.balance_micro : 0n);
 
   const safeNum = fromMicroUnits(safeToSpend.safeToSpendDailyMicro);
