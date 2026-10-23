@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Wallet,
@@ -114,10 +114,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'transactions' | 'aesthetic' | 'settings'>('profile');
 
-  // Starting Balances State
-  const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-  const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-  const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
+  // Starting Balances State (Robust Account Subtype & ID Matching)
+  const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
+  const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
+  const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
 
   const [editCash, setEditCash] = useState(() => (cashAcc ? Number(fromMicroUnits(cashAcc.balance_micro)) : 0));
   const [editBank, setEditBank] = useState(() => (bankAcc ? Number(fromMicroUnits(bankAcc.balance_micro)) : 0));
@@ -127,6 +127,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   // User Google Sheet / Excel Link State
   const [userSheetUrl, setUserSheetUrl] = useState(() => getUserSheetUrl(user.id));
   const [sheetUrlSavedMsg, setSheetUrlSavedMsg] = useState(false);
+
+  // Aesthetic State
+  const [selectedTheme, setSelectedTheme] = useState(themePrefs.bgTheme);
+  const [customBgUrl, setCustomBgUrl] = useState(themePrefs.customBgUrl);
+  const [glassOpacity, setGlassOpacity] = useState(themePrefs.glassOpacity);
+  const [glassBlur, setGlassBlur] = useState(themePrefs.glassBlur);
+  const [savedThemeMsg, setSavedThemeMsg] = useState(false);
+
+  // Re-sync all fields whenever modal is opened or account balances change
+  useEffect(() => {
+    if (isOpen) {
+      if (cashAcc) setEditCash(Number(fromMicroUnits(cashAcc.balance_micro)));
+      if (bankAcc) setEditBank(Number(fromMicroUnits(bankAcc.balance_micro)));
+      if (ccAcc) setEditCC(Number(fromMicroUnits(ccAcc.balance_micro)));
+      setUserSheetUrl(getUserSheetUrl(user.id));
+      setSelectedTheme(themePrefs.bgTheme);
+      setCustomBgUrl(themePrefs.customBgUrl);
+      setGlassOpacity(themePrefs.glassOpacity);
+      setGlassBlur(themePrefs.glassBlur);
+    }
+  }, [isOpen, cashAcc?.balance_micro, bankAcc?.balance_micro, ccAcc?.balance_micro, user.id, themePrefs]);
 
   const handleSaveSheetUrl = () => {
     soundAndVoice.playPillowTap();
@@ -151,12 +172,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     date: '',
   });
 
-  // Aesthetic State
-  const [selectedTheme, setSelectedTheme] = useState(themePrefs.bgTheme);
-  const [customBgUrl, setCustomBgUrl] = useState(themePrefs.customBgUrl);
-  const [glassOpacity, setGlassOpacity] = useState(themePrefs.glassOpacity);
-  const [glassBlur, setGlassBlur] = useState(themePrefs.glassBlur);
-  const [savedThemeMsg, setSavedThemeMsg] = useState(false);
 
   if (!isOpen) return null;
 
