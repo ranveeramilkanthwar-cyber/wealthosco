@@ -195,15 +195,19 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
   // Change Starting Balances from Profile
   const handleProfileUpdateStartingBalances = (cash: number, bank: number, cc: number) => {
     try {
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-      const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-      const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
-      const equityAcc = accounts.find((a) => a.account_type === 'EQUITY') || accounts[3];
+      const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+      const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+      const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts[2];
+      const equityAcc = accounts.find((a) => a.id === 'acc_equity_opening' || a.account_type === 'EQUITY') || accounts[3];
 
-      cashAcc.balance_micro = toMicroUnits(cash);
-      bankAcc.balance_micro = toMicroUnits(bank);
-      if (ccAcc) ccAcc.balance_micro = toMicroUnits(cc);
-      equityAcc.balance_micro = toMicroUnits(cash + bank - cc);
+      // Update DoubleEntryLedger internal accounts map directly
+      ledger.setAccountBalance(cashAcc.id, toMicroUnits(cash));
+      ledger.setAccountBalance(bankAcc.id, toMicroUnits(bank));
+      if (ccAcc) ledger.setAccountBalance(ccAcc.id, toMicroUnits(cc));
+      if (equityAcc) ledger.setAccountBalance(equityAcc.id, toMicroUnits(cash + bank - cc));
+
+      // Persist in user profile database
+      AuthEngine.updateUserProfile(user.id, { initialCash: cash, initialBank: bank });
 
       UserSheetSyncEngine.syncTransaction(user, {
         id: 'start_calib_' + Date.now(),
@@ -216,6 +220,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         paymentAccount: 'Account Calibration',
       });
 
+      localStorage.setItem(`wealthos_user_${user.id}_initial_setup_completed`, 'true');
       syncPersistence();
       soundAndVoice.playSuccessChime();
       triggerUndoBanner('init_setup', `Calibrated starting balances: Cash ₹${cash}, Bank ₹${bank}`);
@@ -477,16 +482,27 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
   };
 
   // Quick Expense (from Picture tiles or Voice)
-  const handleRecordQuickExpense = (categoryName: string, amountMicro: bigint, note: string) => {
+  const handleRecordQuickExpense = (
+    categoryName: string,
+    amountMicro: bigint,
+    note: string,
+    paymentMode: string = 'bank'
+  ) => {
     try {
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
+      const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+      const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+      const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts[2];
+
+      const pMode = (paymentMode || 'bank').toLowerCase();
+      const sourceAcc = pMode === 'cash' ? cashAcc : pMode === 'card' ? ccAcc : bankAcc;
+
       let expAcc = accounts.find((a) => a.name.toLowerCase().includes(categoryName.toLowerCase()) && a.account_type === 'EXPENSE');
       if (!expAcc) {
         expAcc = accounts.find((a) => a.account_type === 'EXPENSE') || accounts[5];
       }
 
       const result = service.recordExpense({
-        sourceAccountId: bankAcc.id,
+        sourceAccountId: sourceAcc.id,
         expenseAccountId: expAcc.id,
         amountMicro,
         date: new Date().toISOString(),
@@ -503,7 +519,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         category: categoryName,
         description: note,
         amount: Number(fromMicroUnits(amountMicro)),
-        paymentAccount: bankAcc.name,
+        paymentAccount: sourceAcc.name,
       });
       triggerUndoBanner(result.transaction.id, `Saved ${formatCurrency(amountMicro)} for ${note}`);
       setMascotSpeech(`Saved ${formatCurrency(amountMicro)} for ${note}! ✨`);
@@ -629,11 +645,14 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
   }) => {
     try {
       const amountMicro = toMicroUnits(entry.amount);
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-      const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-      const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
-      const equityAcc = accounts.find((a) => a.account_type === 'EQUITY') || accounts[3];
-      const sourceAcc = entry.paymentMode === 'Cash' ? cashAcc : bankAcc;
+      const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+      const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+      const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts[2];
+      const equityAcc = accounts.find((a) => a.id === 'acc_equity_opening' || a.account_type === 'EQUITY') || accounts[3];
+      const pMode = (entry.paymentMode || '').toLowerCase();
+      const isCash = pMode.includes('cash');
+      const isCard = pMode.includes('card') && !pMode.includes('bank');
+      const sourceAcc = isCash ? cashAcc : isCard ? ccAcc : bankAcc;
 
       if (entry.type === 'EXPENSE') {
         let expAcc = accounts.find((a) => a.name.toLowerCase().includes(entry.category.toLowerCase()) && a.account_type === 'EXPENSE');
@@ -770,140 +789,8 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
     bankAmount: number;
     ccOutstanding: number;
   }) => {
-    try {
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-      const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-      const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
-      const equityAcc = accounts.find((a) => a.account_type === 'EQUITY') || accounts[3];
-
-      if (params.cashAmount > 0) {
-        const resCash = ledger.createJournalEntry({
-          transaction: {
-            transaction_date: new Date().toISOString(),
-            posted_date: new Date().toISOString(),
-            description: 'Starting Cash in Hand',
-            transaction_type: 'TRANSFER',
-            status: 'CLEARED',
-            is_tax_deductible: false,
-            deduplication_hash: 'init_cash_' + Date.now(),
-            attachment_urls: [],
-            entity_id: 'PERSONAL',
-          },
-          postings: [
-            {
-              account_id: cashAcc.id,
-              direction: 'DEBIT',
-              amount_micro: toMicroUnits(params.cashAmount),
-              memo: 'Cash opening balance',
-            },
-            {
-              account_id: equityAcc.id,
-              direction: 'CREDIT',
-              amount_micro: toMicroUnits(params.cashAmount),
-              memo: 'Owner Opening Equity',
-            },
-          ],
-        });
-        UserSheetSyncEngine.syncTransaction(user, {
-          id: resCash.transaction.id,
-          date: new Date().toISOString().slice(0, 10),
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          type: 'TRANSFER',
-          category: 'Starting Balance',
-          description: 'Starting Cash in Hand',
-          amount: params.cashAmount,
-          paymentAccount: 'Cash in Hand',
-        });
-      }
-
-      if (params.bankAmount > 0) {
-        const resBank = ledger.createJournalEntry({
-          transaction: {
-            transaction_date: new Date().toISOString(),
-            posted_date: new Date().toISOString(),
-            description: 'Starting Bank Account Balance',
-            transaction_type: 'TRANSFER',
-            status: 'CLEARED',
-            is_tax_deductible: false,
-            deduplication_hash: 'init_bank_' + Date.now(),
-            attachment_urls: [],
-            entity_id: 'PERSONAL',
-          },
-          postings: [
-            {
-              account_id: bankAcc.id,
-              direction: 'DEBIT',
-              amount_micro: toMicroUnits(params.bankAmount),
-              memo: 'Primary bank opening balance',
-            },
-            {
-              account_id: equityAcc.id,
-              direction: 'CREDIT',
-              amount_micro: toMicroUnits(params.bankAmount),
-              memo: 'Owner Opening Equity',
-            },
-          ],
-        });
-        UserSheetSyncEngine.syncTransaction(user, {
-          id: resBank.transaction.id,
-          date: new Date().toISOString().slice(0, 10),
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          type: 'TRANSFER',
-          category: 'Starting Balance',
-          description: 'Starting Bank Account Balance',
-          amount: params.bankAmount,
-          paymentAccount: 'Bank / UPI',
-        });
-      }
-
-      if (params.ccOutstanding > 0 && ccAcc) {
-        const resCC = ledger.createJournalEntry({
-          transaction: {
-            transaction_date: new Date().toISOString(),
-            posted_date: new Date().toISOString(),
-            description: 'Initial Credit Card Due / Outstanding',
-            transaction_type: 'TRANSFER',
-            status: 'CLEARED',
-            is_tax_deductible: false,
-            deduplication_hash: 'init_cc_' + Date.now(),
-            attachment_urls: [],
-            entity_id: 'PERSONAL',
-          },
-          postings: [
-            {
-              account_id: equityAcc.id,
-              direction: 'DEBIT',
-              amount_micro: toMicroUnits(params.ccOutstanding),
-              memo: 'Owner Equity CC Debt Offset',
-            },
-            {
-              account_id: ccAcc.id,
-              direction: 'CREDIT',
-              amount_micro: toMicroUnits(params.ccOutstanding),
-              memo: 'Credit card opening liability',
-            },
-          ],
-        });
-        UserSheetSyncEngine.syncTransaction(user, {
-          id: resCC.transaction.id,
-          date: new Date().toISOString().slice(0, 10),
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-          type: 'TRANSFER',
-          category: 'Starting Balance',
-          description: 'Credit Card Opening Due',
-          amount: params.ccOutstanding,
-          paymentAccount: 'Credit Card',
-        });
-      }
-
-      localStorage.setItem(`wealthos_user_${user.id}_initial_setup_completed`, 'true');
-      syncPersistence();
-      soundAndVoice.playSuccessChime();
-      triggerUndoBanner('init_setup', `Set starting balances: Cash ₹${params.cashAmount}, Bank ₹${params.bankAmount}`);
-      setMascotSpeech(`Initial balances saved! Ready to track your money with zero drift! 🚀`);
-    } catch (err: any) {
-      alert(`Setup error: ${err.message}`);
-    }
+    handleProfileUpdateStartingBalances(params.cashAmount, params.bankAmount, params.ccOutstanding);
+    setIsSetupModalOpen(false);
   };
 
   // Universal Add Transaction Handler (from Modal or Quick Buttons)
@@ -918,9 +805,9 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
     date: string;
   }) => {
     try {
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-      const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-      const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD') || accounts[2];
+      const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+      const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+      const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts[2];
 
       const sourceAsset = tx.paymentMode === 'cash' ? cashAcc : tx.paymentMode === 'card' ? ccAcc : bankAcc;
 
@@ -1147,8 +1034,8 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
 
   // Dynamic Safe-to-Spend
   const safeToSpend = useMemo(() => {
-    const bankAcc = accounts.find((a) => a.account_subtype === 'BANK');
-    const cashAcc = accounts.find((a) => a.account_subtype === 'CASH');
+    const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK'));
+    const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH'));
     const liquidCash = (bankAcc ? bankAcc.balance_micro : 0n) + (cashAcc ? cashAcc.balance_micro : 0n);
 
     // Sum unbilled statement dues
@@ -1439,8 +1326,9 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
             accounts={accounts}
             onAddAccount={handleAddAccount}
             onRecordDeposit={(accId, amt, note) => {
-              service.recordIncome({
-                destinationAccountId: accId,
+              const targetAcc = accounts.find((a) => a.id === accId) || accounts[0];
+              const result = service.recordIncome({
+                destinationAccountId: targetAcc.id,
                 incomeAccountId: 'acc_equity_opening',
                 amountMicro: amt,
                 date: new Date().toISOString(),
@@ -1448,7 +1336,18 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
               });
               syncPersistence();
               soundAndVoice.playSuccessChime();
-              setMascotSpeech(`Deposited ${formatCurrency(amt)} into ${accId}!`);
+              UserSheetSyncEngine.syncTransaction(user, {
+                id: result.transaction.id,
+                date: new Date().toISOString().slice(0, 10),
+                time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+                type: 'INCOME',
+                category: 'Deposit / Equity',
+                description: note,
+                amount: Number(fromMicroUnits(amt)),
+                paymentAccount: targetAcc.name,
+              });
+              triggerUndoBanner(result.transaction.id, `Deposited ${formatCurrency(amt)} into ${targetAcc.name}`);
+              setMascotSpeech(`Deposited ${formatCurrency(amt)} into ${targetAcc.name}!`);
             }}
           />
         )}
@@ -1821,8 +1720,9 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         isOpen={isSetupModalOpen}
         onClose={() => setIsSetupModalOpen(false)}
         onSaveBalances={handleSaveInitialBalances}
-        currentCash={Number(fromMicroUnits(accounts.find((a) => a.account_subtype === 'CASH')?.balance_micro || 0n))}
-        currentBank={Number(fromMicroUnits(accounts.find((a) => a.account_subtype === 'BANK')?.balance_micro || 0n))}
+        currentCash={Number(fromMicroUnits(accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH'))?.balance_micro || 0n))}
+        currentBank={Number(fromMicroUnits(accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK'))?.balance_micro || 0n))}
+        currentCC={Number(fromMicroUnits(accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD'))?.balance_micro || 0n))}
       />
 
       {/* Quick Add Transaction Modal (Expense, Income, Transfer) */}
