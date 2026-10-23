@@ -19,7 +19,8 @@ import {
   ExternalLink,
   FileSpreadsheet,
   Save,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Edit3
 } from 'lucide-react';
 import { formatCurrency, fromMicroUnits, toMicroUnits } from '../../core/financial-engine/microUnits';
 import { soundAndVoice } from '../../core/financial-engine/audioSpeechEngine';
@@ -81,10 +82,10 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
     setTimeout(() => setHomeSheetSaved(false), 2500);
   };
 
-  // Balances
-  const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-  const cashAcc = accounts.find((a) => a.account_subtype === 'CASH') || accounts[1];
-  const ccAcc = accounts.find((a) => a.account_subtype === 'CREDIT_CARD');
+  // Balances (Robust Matching)
+  const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+  const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+  const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD'));
 
   const bankBalance = bankAcc ? bankAcc.balance_micro : 0n;
   const cashBalance = cashAcc ? cashAcc.balance_micro : 0n;
@@ -279,20 +280,50 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
             {hide(totalLiquid)}
           </h1>
 
-          {/* Account Sub-Cards: Bank & Cash */}
+          {/* Account Sub-Cards: Bank & Cash (Clickable to Edit Starting Balances) */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div style={{ background: 'rgba(255,255,255,0.14)', borderRadius: '16px', padding: '12px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', opacity: 0.8, fontSize: '0.75rem', fontWeight: 700 }}>
-                <span>🏦</span>
-                <span>Bank / UPI</span>
+            <div
+              onClick={onOpenProfileModal || onOpenSetupModal}
+              title="Click to view or calibrate Bank Balance"
+              style={{
+                background: 'rgba(255,255,255,0.14)',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.14)')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.9, fontSize: '0.75rem', fontWeight: 700 }}>
+                  <span>🏦</span>
+                  <span>Bank / UPI</span>
+                </div>
+                <Edit3 size={12} style={{ opacity: 0.7 }} />
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>{hide(bankBalance)}</div>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.14)', borderRadius: '16px', padding: '12px 14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', opacity: 0.8, fontSize: '0.75rem', fontWeight: 700 }}>
-                <span>💵</span>
-                <span>Cash in Hand</span>
+            <div
+              onClick={onOpenProfileModal || onOpenSetupModal}
+              title="Click to view or calibrate Cash in Hand"
+              style={{
+                background: 'rgba(255,255,255,0.14)',
+                borderRadius: '16px',
+                padding: '12px 14px',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.22)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.14)')}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', opacity: 0.9, fontSize: '0.75rem', fontWeight: 700 }}>
+                  <span>💵</span>
+                  <span>Cash in Hand</span>
+                </div>
+                <Edit3 size={12} style={{ opacity: 0.7 }} />
               </div>
               <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>{hide(cashBalance)}</div>
             </div>
