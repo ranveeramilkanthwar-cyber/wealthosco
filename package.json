@@ -1,0 +1,36 @@
+{
+  "name": "wealth-os",
+  "private": true,
+  "version": "3.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "checkpoint:1": "vitest run tests/checkpoint1.test.ts",
+    "checkpoint:2": "vitest run tests/checkpoint2.test.ts",
+    "checkpoint:3": "vitest run tests/checkpoint3.test.ts",
+    "checkpoint:4": "vitest run tests/checkpoint4.test.ts",
+    "checkpoint:5": "vitest run tests/checkpoint5.test.ts",
+    "checkpoint:6": "vitest run tests/checkpoint6.test.ts",
+    "checkpoint:7": "vitest run tests/checkpoint7.test.ts",
+    "checkpoint:8": "vitest run tests/checkpoint8.test.ts",
+    "checkpoints:all": "vitest run tests/"
+  },
+  "dependencies": {
+    "lucide-react": "^1.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "isomorphic-git": "^1.44.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}
