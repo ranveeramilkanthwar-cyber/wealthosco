@@ -26,7 +26,7 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
       soundAndVoice.playSuccessChime();
     } catch {}
 
-    // Auto-progress timer (4.2 seconds total: 3.5s rolling, 0.7s curtain pull)
+    // Auto-progress timer (3.8 seconds total: rolling cascade then curtain pull)
     const startTime = Date.now();
     const duration = 3800;
 
@@ -35,25 +35,26 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
       const pct = Math.min(100, Math.round((elapsed / duration) * 100));
       setProgress(pct);
 
-      // Physics of rolling coin moving from top-left, looping down, and hitting the bottom vault
-      // X traverses across 5% -> 85% -> 50%
-      // Y traverses downwards from 15% -> 88%
+      // Physics of rolling coin moving dynamically from top-left across the screen and into the bottom vault
       const t = pct / 100;
-      const curX = 10 + 75 * Math.sin(t * Math.PI * 1.5) ** 2;
-      const curY = 12 + 76 * (t ** 1.3);
-      const rot = t * 1440; // 4 full 360-degree rolls
+      const curX = 12 + 76 * Math.sin(t * Math.PI * 1.4) ** 2;
+      const curY = 10 + 78 * (t ** 1.35);
+      const rot = t * 1800; // 5 full 360-degree rolls
 
       setCoinPosition({ x: curX, y: curY, rot });
 
-      if (pct >= 95 && !isPullingDashboard) {
+      if (pct >= 90 && !isPullingDashboard) {
         setIsPullingDashboard(true);
+        try {
+          soundAndVoice.playSuccessChime();
+        } catch {}
       }
 
       if (pct >= 100) {
         clearInterval(interval);
         handleFinish();
       }
-    }, 30);
+    }, 28);
 
     return () => clearInterval(interval);
   }, []);
@@ -110,12 +111,68 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '32px',
+          fontWeight: 900,
+          color: '#78350F',
           zIndex: 10001,
           pointerEvents: 'none',
           transition: 'box-shadow 0.1s ease',
         }}
       >
         <span>₹</span>
+      </div>
+
+      {/* Satellite Trailing Mini-Coin 1 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: `${Math.max(5, coinPosition.x - 4)}%`,
+          top: `${Math.max(5, coinPosition.y - 5)}%`,
+          transform: `translate(-50%, -50%) rotate(${coinPosition.rot * 1.2}deg)`,
+          width: '38px',
+          height: '38px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)',
+          boxShadow: '0 0 20px rgba(245, 158, 11, 0.55)',
+          border: '2px solid #FEF08A',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '18px',
+          fontWeight: 900,
+          color: '#78350F',
+          zIndex: 10000,
+          pointerEvents: 'none',
+          opacity: 0.85,
+        }}
+      >
+        <span>₹</span>
+      </div>
+
+      {/* Satellite Trailing Mini-Coin 2 */}
+      <div
+        style={{
+          position: 'absolute',
+          left: `${Math.max(5, coinPosition.x + 3)}%`,
+          top: `${Math.max(5, coinPosition.y - 8)}%`,
+          transform: `translate(-50%, -50%) rotate(${coinPosition.rot * 0.8}deg)`,
+          width: '28px',
+          height: '28px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #A7F3D0 0%, #10B981 100%)',
+          boxShadow: '0 0 16px rgba(16, 185, 129, 0.5)',
+          border: '2px solid #D1FAE5',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '14px',
+          fontWeight: 900,
+          color: '#064E3B',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          opacity: 0.75,
+        }}
+      >
+        <span>💎</span>
       </div>
 
       {/* Sparkle Trail Behind Rolling Coin */}
@@ -130,9 +187,9 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
         }}
       >
         <div style={{ position: 'relative' }}>
-          <span style={{ position: 'absolute', top: -15, left: -20, fontSize: '18px', animation: 'sparklePop 0.8s infinite' }}>✨</span>
-          <span style={{ position: 'absolute', top: 12, left: -25, fontSize: '14px', animation: 'sparklePop 0.6s infinite 0.2s' }}>🌟</span>
-          <span style={{ position: 'absolute', top: -25, left: 15, fontSize: '16px', animation: 'sparklePop 0.7s infinite 0.4s' }}>💫</span>
+          <span style={{ position: 'absolute', top: -18, left: -24, fontSize: '20px', animation: 'sparklePop 0.8s infinite' }}>✨</span>
+          <span style={{ position: 'absolute', top: 14, left: -28, fontSize: '16px', animation: 'sparklePop 0.6s infinite 0.2s' }}>🌟</span>
+          <span style={{ position: 'absolute', top: -28, left: 18, fontSize: '18px', animation: 'sparklePop 0.7s infinite 0.4s' }}>💫</span>
         </div>
       </div>
 

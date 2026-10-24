@@ -36,6 +36,7 @@ interface HeaderProps {
   onLogout?: () => void;
   onOpenSheetModal?: () => void;
   onOpenProfileModal?: () => void;
+  onReplayIntro?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -55,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onOpenSheetModal,
   onOpenProfileModal,
+  onReplayIntro,
 }) => {
   return (
     <header style={{ 
@@ -249,6 +251,32 @@ export const Header: React.FC<HeaderProps> = ({
           {/* User Profile Badge & Sheet & Logout */}
           {currentUser && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderLeft: '1px solid var(--border-subtle)', paddingLeft: '12px' }}>
+              {onReplayIntro && (
+                <button
+                  type="button"
+                  onClick={onReplayIntro}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(217, 119, 6, 0.32))',
+                    border: '1px solid rgba(245, 158, 11, 0.5)',
+                    borderRadius: '10px',
+                    padding: '6px 11px',
+                    color: '#FBBF24',
+                    fontWeight: 800,
+                    fontSize: '0.74rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 0 14px rgba(245, 158, 11, 0.25)',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title="Play the rolling coin intro animation & pull the dashboard"
+                >
+                  <span style={{ fontSize: '14px', animation: 'coinBounce 2s infinite' }}>🪙</span>
+                  <span>Coin Intro</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onOpenProfileModal}

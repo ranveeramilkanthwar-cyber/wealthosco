@@ -1299,6 +1299,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         onLogout={onLogout}
         onOpenSheetModal={() => setIsUserSheetModalOpen(true)}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onReplayIntro={() => setShowIntro(true)}
       />
 
       {/* Per-Page Top Bar with Back Button (shown on non-home pages) */}

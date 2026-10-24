@@ -106,6 +106,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
     }, 450);
   };
 
+  const handleQuickDemo = () => {
+    let demo = savedUsers.find((u) => u.username === 'demo_user');
+    if (!demo) {
+      const res = AuthEngine.register({
+        name: 'Demo Explorer',
+        username: 'demo_user',
+        email: 'demo@wealthos.co',
+        password: 'password123',
+        dob: '2000-01-01',
+        gender: 'Prefer not to say',
+        initialCash: 15000,
+        initialBank: 50000,
+      });
+      if (res.user) {
+        demo = res.user;
+      }
+    }
+    if (demo) {
+      AuthEngine.setActiveUser(demo);
+      soundAndVoice.playSuccessChime();
+      setSuccessMsg(`Welcome, ${demo.name}! Rolling the vault coin to unlock your dashboard…`);
+      setTimeout(() => {
+        onAuthSuccess(demo!);
+      }, 250);
+    }
+  };
+
   return (
     <div
       style={{
@@ -805,6 +832,45 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthSuccess }) => {
             </div>
           </form>
         )}
+
+        {/* 1-Click Instant Demo Access with Rolling Coin Intro */}
+        <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.08)', textAlign: 'center' }}>
+          <button
+            type="button"
+            onClick={handleQuickDemo}
+            style={{
+              width: '100%',
+              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(217, 119, 6, 0.22))',
+              border: '1.5px dashed rgba(245, 158, 11, 0.5)',
+              borderRadius: '16px',
+              padding: '12px 14px',
+              color: '#FBBF24',
+              fontWeight: 800,
+              fontSize: '0.86rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 18px rgba(245, 158, 11, 0.18)',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 24px rgba(245, 158, 11, 0.35)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 18px rgba(245, 158, 11, 0.18)';
+            }}
+          >
+            <span style={{ fontSize: '18px', animation: 'coinBounce 2s infinite' }}>🪙</span>
+            <span>1-Click Instant Demo • Roll Vault Coin &amp; Open Dashboard</span>
+          </button>
+          <span style={{ fontSize: '0.7rem', color: '#64748B', display: 'block', marginTop: '6px' }}>
+            Instant access with preloaded balances, peer flows, and Google Sheet sync test
+          </span>
+        </div>
       </div>
     </div>
   );
