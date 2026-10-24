@@ -55,12 +55,16 @@ import { UserSheetModal } from './components/UserSheetModal';
 import { UserSheetSyncEngine } from '../core/sheets/userSheetSync';
 import { UserProfileModal } from './components/UserProfileModal';
 import { AnimatedIntro } from './components/AnimatedIntro';
+import { OtherFlowModal, OtherFlowMode } from './components/OtherFlowModal';
+import { MovingBackground } from './components/MovingBackground';
 import { 
   getUserThemePrefs, 
   saveUserThemePrefs, 
   UserThemePrefs, 
   updateUserSheetRecord, 
-  deleteUserSheetRecord 
+  deleteUserSheetRecord,
+  getPendingPeerBalances,
+  settlePeerRecord
 } from '../core/financial-engine/storage';
 
 export function App() {
@@ -181,6 +185,8 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [addModalDefaultType, setAddModalDefaultType] = useState<TxType>('EXPENSE');
   const [isUserSheetModalOpen, setIsUserSheetModalOpen] = useState(false);
+  const [isOtherFlowModalOpen, setIsOtherFlowModalOpen] = useState(false);
+  const [otherFlowDefaultMode, setOtherFlowDefaultMode] = useState<OtherFlowMode>('SOMEONE_PAID_FOR_ME');
 
   // Profile & Aesthetics State
   const [themePrefs, setThemePrefs] = useState<UserThemePrefs>(() => getUserThemePrefs(user.id));
@@ -893,6 +899,121 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
     }
   };
 
+  // Peer Flow & Other Expense / Other Income Handler
+  const handleRecordOtherFlow = (data: {
+    mode: OtherFlowMode;
+    personName: string;
+    amount: number;
+    description: string;
+    category: string;
+    paymentAccount: string;
+    dueDate?: string;
+    settledRecordId?: string;
+  }) => {
+    try {
+      const amtMicro = toMicroUnits(data.amount);
+      const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+      const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+      const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD')) || accounts[2];
+      const sourceAsset = data.paymentAccount.toLowerCase().includes('cash') ? cashAcc : bankAcc;
+
+      let txId = 'flow_' + Date.now();
+
+      if (data.mode === 'SOMEONE_PAID_FOR_ME') {
+        // Someone paid on my behalf: My expense increases, I owe them (liability)
+        let expAcc = accounts.find((a) => a.name.toLowerCase().includes(data.category.toLowerCase()) && a.account_type === 'EXPENSE');
+        if (!expAcc) expAcc = accounts.find((a) => a.account_type === 'EXPENSE') || accounts[5];
+
+        const res = service.recordExpense({
+          sourceAccountId: ccAcc ? ccAcc.id : sourceAsset.id,
+          expenseAccountId: expAcc.id,
+          amountMicro: amtMicro,
+          date: new Date().toISOString(),
+          description: data.description,
+        });
+        txId = res.transaction.id;
+        syncPersistence();
+        setMascotSpeech(`Recorded other expense: ${data.personName} paid ₹${data.amount} on your behalf! 🤝`);
+      } else if (data.mode === 'PAID_FOR_SOMEONE_ELSE') {
+        // I paid from my bank/cash on someone's behalf: outflow from cash/bank
+        let expAcc = accounts.find((a) => a.account_type === 'EXPENSE') || accounts[5];
+        const res = service.recordExpense({
+          sourceAccountId: sourceAsset.id,
+          expenseAccountId: expAcc.id,
+          amountMicro: amtMicro,
+          date: new Date().toISOString(),
+          description: data.description,
+        });
+        txId = res.transaction.id;
+        syncPersistence();
+        setMascotSpeech(`Paid ₹${data.amount} for ${data.personName}! Added to pending collections. 📤`);
+      } else if (data.mode === 'REMAINING_TO_RECEIVE') {
+        // Just record pending receivable / other income
+        setMascotSpeech(`Recorded ₹${data.amount} to be received from ${data.personName}! ⏳`);
+      } else if (data.mode === 'SETTLEMENT_RECEIVED') {
+        // Inflow to my bank/cash!
+        const incAcc = accounts.find((a) => a.account_type === 'INCOME') || accounts[4];
+        const res = service.recordIncome({
+          destinationAccountId: sourceAsset.id,
+          incomeAccountId: incAcc.id,
+          amountMicro: amtMicro,
+          date: new Date().toISOString(),
+          description: data.description,
+        });
+        txId = res.transaction.id;
+        syncPersistence();
+        if (data.settledRecordId) {
+          settlePeerRecord(user.id, data.settledRecordId, data.amount);
+        }
+        setMascotSpeech(`Received ₹${data.amount} repayment from ${data.personName}! Balance updated! 💰`);
+      }
+
+      // Calculate running balance snapshots
+      const curBank = Number(fromMicroUnits(bankAcc.balance_micro));
+      const curCash = Number(fromMicroUnits(cashAcc.balance_micro));
+      const curNetWorth = Number(fromMicroUnits(netWorth));
+
+      // Sync to User Sheet & Database with all 17 detailed columns
+      UserSheetSyncEngine.syncTransaction(user, {
+        id: txId,
+        date: new Date().toISOString().slice(0, 10),
+        time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        type: data.mode === 'SOMEONE_PAID_FOR_ME' || data.mode === 'PAID_FOR_SOMEONE_ELSE' ? 'OTHER_EXPENSE' : 'OTHER_INCOME',
+        scenario: data.mode,
+        category: data.category,
+        subCategory: data.mode.replace(/_/g, ' '),
+        description: data.description,
+        amount: data.amount,
+        paymentAccount: data.paymentAccount,
+        personName: data.personName,
+        settlementStatus: data.mode === 'SETTLEMENT_RECEIVED' ? 'SETTLED' : 'PENDING',
+        remainingAmount: data.mode === 'SETTLEMENT_RECEIVED' ? 0 : data.amount,
+        dueDate: data.dueDate,
+        runningBankBalance: curBank,
+        runningCashBalance: curCash,
+        netWorthSnapshot: curNetWorth,
+        notes: data.description,
+      });
+
+      triggerUndoBanner(txId, `${data.mode.replace(/_/g, ' ')}: ₹${data.amount}`);
+      soundAndVoice.playSuccessChime();
+    } catch (err: any) {
+      alert(`Flow recording error: ${err.message}`);
+    }
+  };
+
+  const handleSettlePeerItem = (recordId: string, amount: number, personName: string) => {
+    handleRecordOtherFlow({
+      mode: 'SETTLEMENT_RECEIVED',
+      personName,
+      amount,
+      description: `Settled repayment from ${personName}`,
+      category: 'Peer Settlement',
+      paymentAccount: 'Bank / UPI',
+      settledRecordId: recordId,
+    });
+  };
+
   // CapEx Register Asset Handler
   const handleRegisterAsset = (params: {
     name: string;
@@ -1152,6 +1273,13 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         transition: 'background 0.3s ease',
       }}
     >
+      {/* Moving Playful Animated Background Layer */}
+      <MovingBackground
+        theme={themePrefs.bgTheme}
+        movingEnabled={themePrefs.movingBackground}
+        customBgUrl={themePrefs.customBgUrl}
+        opacity={themePrefs.glassOpacity}
+      />
 
       {/* WealthOS Universal Header */}
       <Header
@@ -1284,6 +1412,11 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
               currentUser={user}
               onOpenSheetModal={() => setIsUserSheetModalOpen(true)}
               onOpenProfileModal={() => setIsProfileModalOpen(true)}
+              onOpenOtherFlowModal={(mode = 'SOMEONE_PAID_FOR_ME') => {
+                setOtherFlowDefaultMode(mode);
+                setIsOtherFlowModalOpen(true);
+              }}
+              onSettlePeerFlow={handleSettlePeerItem}
             />
           )
         )}
@@ -1738,6 +1871,15 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         isOpen={isUserSheetModalOpen}
         onClose={() => setIsUserSheetModalOpen(false)}
         user={user}
+      />
+
+      {/* Peer Flows & Other Expense / Other Income Modal */}
+      <OtherFlowModal
+        isOpen={isOtherFlowModalOpen}
+        onClose={() => setIsOtherFlowModalOpen(false)}
+        defaultMode={otherFlowDefaultMode}
+        pendingRecords={getPendingPeerBalances(user.id).pendingToReceive}
+        onRecordFlow={handleRecordOtherFlow}
       />
 
       {/* Footer */}

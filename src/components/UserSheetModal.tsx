@@ -31,6 +31,7 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
   const [gsheetUrl, setGsheetUrl] = useState(() => UserSheetSyncEngine.getUserGoogleSheetUrl(user.id));
   const [savedUrlMsg, setSavedUrlMsg] = useState(false);
   const [testingWebhook, setTestingWebhook] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
   const [autoDownload, setAutoDownload] = useState(() => UserSheetSyncEngine.isAutoDownloadExcel(user.id));
 
@@ -39,7 +40,33 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
   const records = getUserSheetRecords(user.id);
   const totalIncome = records.filter((r) => r.type === 'INCOME').reduce((s, r) => s + (r.amount || 0), 0);
   const totalExpense = records.filter((r) => r.type === 'EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+  const otherExpense = records.filter((r) => r.type === 'OTHER_EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+  const otherIncome = records.filter((r) => r.type === 'OTHER_INCOME').reduce((s, r) => s + (r.amount || 0), 0);
   const netBalance = totalIncome - totalExpense;
+
+  const handleSyncAllHistorical = async () => {
+    if (!gsheetUrl.trim()) {
+      alert('Please enter and save your Google Sheet Webhook URL first.');
+      return;
+    }
+    setSyncingAll(true);
+    setTestResult(null);
+    soundAndVoice.playPillowTap();
+
+    try {
+      const res = await UserSheetSyncEngine.syncAllRecordsToGoogleSheet(user);
+      if (res.success) {
+        setTestResult(`✓ Successfully synced all ${res.count} records directly to your Google Sheet!`);
+        soundAndVoice.playSuccessChime();
+      } else {
+        setTestResult(`Failed to sync: ${res.error}`);
+      }
+    } catch (e: any) {
+      setTestResult(`Sync error: ${e.message}`);
+    } finally {
+      setSyncingAll(false);
+    }
+  };
 
   const handleDownloadExcel = () => {
     soundAndVoice.playSuccessChime();
@@ -109,10 +136,15 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
           userName: user.name,
           userEmail: user.email,
           type: 'TEST_SYNC',
+          scenario: 'SELF',
           category: 'Sync Verification',
-          description: 'Live test ping from WealthOS App',
+          subCategory: 'Test Ping',
+          description: 'Live test ping with full column verification',
           amount: 1.0,
-          paymentAccount: 'Test Ping',
+          paymentAccount: 'Test Account',
+          personName: 'Self',
+          settlementStatus: 'SETTLED',
+          remainingAmount: 0,
         }),
       });
 
@@ -146,7 +178,7 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
           top: '50%',
           left: '50%',
           transform: 'translate(-50%, -50%)',
-          width: 'min(94vw, 620px)',
+          width: 'min(94vw, 680px)',
           maxHeight: '90vh',
           overflowY: 'auto',
           background: 'var(--bg-secondary)',
@@ -164,11 +196,11 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
               <FileSpreadsheet size={24} color="#10B981" />
               <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                {user.name}’s Personal Spreadsheet
+                {user.name}’s Personal Spreadsheet &amp; Cloud Sync
               </h2>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-              Separate Excel & Google Sheet ledger strictly isolated for <strong>@{user.username}</strong>
+              Live Excel &amp; Google Sheet ledger strictly isolated for <strong>@{user.username}</strong>
             </p>
           </div>
           <button
@@ -192,26 +224,30 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: 'repeat(5, 1fr)',
             gap: '8px',
             marginBottom: '18px',
           }}
         >
-          <div style={{ background: 'var(--bg-card)', padding: '12px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rows</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>{records.length}</div>
+          <div style={{ background: 'var(--bg-card)', padding: '10px 8px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Rows</div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>{records.length}</div>
           </div>
-          <div style={{ background: 'var(--bg-card)', padding: '12px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#10B981', textTransform: 'uppercase' }}>Earned</div>
+          <div style={{ background: 'var(--bg-card)', padding: '10px 8px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#10B981', textTransform: 'uppercase' }}>Income</div>
             <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#10B981', marginTop: '2px' }}>₹{totalIncome.toFixed(0)}</div>
           </div>
-          <div style={{ background: 'var(--bg-card)', padding: '12px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase' }}>Spent</div>
+          <div style={{ background: 'var(--bg-card)', padding: '10px 8px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase' }}>Expense</div>
             <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#EF4444', marginTop: '2px' }}>₹{totalExpense.toFixed(0)}</div>
           </div>
-          <div style={{ background: 'var(--bg-card)', padding: '12px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6366F1', textTransform: 'uppercase' }}>Savings</div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#6366F1', marginTop: '2px' }}>₹{netBalance.toFixed(0)}</div>
+          <div style={{ background: 'var(--bg-card)', padding: '10px 8px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#F97316', textTransform: 'uppercase' }}>Other Exp</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#F97316', marginTop: '2px' }}>₹{otherExpense.toFixed(0)}</div>
+          </div>
+          <div style={{ background: 'var(--bg-card)', padding: '10px 8px', borderRadius: '14px', border: '1px solid var(--border-subtle)', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#06B6D4', textTransform: 'uppercase' }}>Other Inc</div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#06B6D4', marginTop: '2px' }}>₹{otherIncome.toFixed(0)}</div>
           </div>
         </div>
 
@@ -448,10 +484,32 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
               <Send size={13} />
               <span>{testingWebhook ? 'Testing…' : 'Test Ping'}</span>
             </button>
+            <button
+              onClick={handleSyncAllHistorical}
+              disabled={syncingAll || records.length === 0}
+              style={{
+                background: 'linear-gradient(135deg, #6366F1, #8B5CF6)',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '9px 12px',
+                color: '#FFF',
+                fontWeight: 800,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                boxShadow: '0 2px 10px rgba(99,102,241,0.3)',
+              }}
+              title="Push all recorded transactions from database to your connected Google Sheet"
+            >
+              <Zap size={13} />
+              <span>{syncingAll ? 'Syncing All…' : 'Sync All to Sheet'}</span>
+            </button>
           </div>
 
           {testResult && (
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: testResult.includes('sent') ? '#10B981' : '#EF4444', marginBottom: '8px' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: testResult.includes('✓') || testResult.includes('sent') ? '#10B981' : '#EF4444', marginBottom: '8px' }}>
               {testResult}
             </div>
           )}
@@ -493,7 +551,7 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
             <Table size={16} color="var(--text-muted)" />
             <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Spreadsheet Preview ({records.length} Total Rows)
+              Spreadsheet Preview ({records.length} Total Detailed Rows)
             </span>
           </div>
 
@@ -502,33 +560,57 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
               No rows recorded yet. Enter a transaction to see it stored here automatically!
             </div>
           ) : (
-            <div style={{ maxHeight: '200px', overflowY: 'auto', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem', textAlign: 'left' }}>
+            <div style={{ maxHeight: '220px', overflowY: 'auto', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border-subtle)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)', background: 'rgba(255,255,255,0.02)', position: 'sticky', top: 0, zIndex: 10 }}>
                     <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Date</th>
                     <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Type</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Scenario</th>
                     <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Category</th>
-                    <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Description</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Description / Text</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Person</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Status</th>
                     <th style={{ padding: '8px 10px', color: 'var(--text-muted)', textAlign: 'right' }}>Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...records].reverse().slice(0, 10).map((r) => (
-                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                      <td style={{ padding: '8px 10px' }}>{r.date}</td>
-                      <td style={{ padding: '8px 10px', fontWeight: 700, color: r.type === 'EXPENSE' ? '#EF4444' : r.type === 'INCOME' ? '#10B981' : '#6366F1' }}>
-                        {r.type}
-                      </td>
-                      <td style={{ padding: '8px 10px' }}>{r.category}</td>
-                      <td style={{ padding: '8px 10px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {r.description}
-                      </td>
-                      <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800 }}>
-                        ₹{r.amount.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
+                  {[...records].slice(0, 15).map((r) => {
+                    const isOtherExp = r.type === 'OTHER_EXPENSE';
+                    const isOtherInc = r.type === 'OTHER_INCOME';
+                    const typeColor = r.type === 'INCOME' ? '#10B981' : r.type === 'EXPENSE' ? '#EF4444' : isOtherExp ? '#F97316' : isOtherInc ? '#06B6D4' : '#6366F1';
+                    return (
+                      <tr key={r.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.date}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: 800, color: typeColor, whiteSpace: 'nowrap' }}>
+                          {r.type}
+                        </td>
+                        <td style={{ padding: '8px 10px', color: '#A5B4FC', fontSize: '0.68rem', whiteSpace: 'nowrap' }}>
+                          {r.scenario || 'SELF'}
+                        </td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.category}</td>
+                        <td style={{ padding: '8px 10px', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {r.description}
+                        </td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.personName || 'Self'}</td>
+                        <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                          <span style={{
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontSize: '0.64rem',
+                            fontWeight: 800,
+                            background: r.settlementStatus === 'PENDING' ? 'rgba(245,158,11,0.18)' : 'rgba(16,185,129,0.18)',
+                            color: r.settlementStatus === 'PENDING' ? '#F59E0B' : '#34D399',
+                          }}>
+                            {r.settlementStatus || 'SETTLED'}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'right', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                          ₹{Number(r.amount || 0).toFixed(2)}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

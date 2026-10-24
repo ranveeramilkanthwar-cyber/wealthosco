@@ -20,13 +20,17 @@ import {
   FileSpreadsheet,
   Save,
   Link as LinkIcon,
-  Edit3
+  Edit3,
+  Users,
+  CheckCircle2,
+  Clock,
+  ArrowDownLeft
 } from 'lucide-react';
 import { formatCurrency, fromMicroUnits, toMicroUnits } from '../../core/financial-engine/microUnits';
 import { soundAndVoice } from '../../core/financial-engine/audioSpeechEngine';
 import { Account, Transaction, LedgerPosting } from '../../core/financial-engine/types';
 import { UserProfile } from '../../core/auth/authEngine';
-import { getUserSheetUrl, saveUserSheetUrl } from '../../core/financial-engine/storage';
+import { getUserSheetUrl, saveUserSheetUrl, getUserSheetRecords, getPendingPeerBalances, settlePeerRecord } from '../../core/financial-engine/storage';
 
 interface SimpleHomeViewProps {
   isPrivate: boolean;
@@ -47,6 +51,8 @@ interface SimpleHomeViewProps {
   currentUser?: UserProfile | null;
   onOpenSheetModal?: () => void;
   onOpenProfileModal?: () => void;
+  onOpenOtherFlowModal?: (mode?: 'SOMEONE_PAID_FOR_ME' | 'PAID_FOR_SOMEONE_ELSE' | 'REMAINING_TO_RECEIVE' | 'SETTLEMENT_RECEIVED') => void;
+  onSettlePeerFlow?: (recordId: string, amount: number, personName: string) => void;
 }
 
 export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
@@ -68,6 +74,8 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
   currentUser,
   onOpenSheetModal,
   onOpenProfileModal,
+  onOpenOtherFlowModal,
+  onSettlePeerFlow,
 }) => {
   const [filterType, setFilterType] = useState<'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER'>('ALL');
   const [homeSheetUrl, setHomeSheetUrl] = useState(() => (currentUser ? getUserSheetUrl(currentUser.id) : ''));
@@ -100,6 +108,31 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
   const totalExpense = useMemo(() => {
     return accounts.filter((a) => a.account_type === 'EXPENSE').reduce((s, a) => s + a.balance_micro, 0n);
   }, [accounts]);
+
+  // Peer Flow Balances & Scenarios (Other Expense & Other Income)
+  const peerRecords = useMemo(() => {
+    return currentUser ? getUserSheetRecords(currentUser.id) : [];
+  }, [currentUser, transactions]);
+
+  const otherExpenses = useMemo(() => {
+    return peerRecords.filter((r) => r.type === 'OTHER_EXPENSE');
+  }, [peerRecords]);
+
+  const otherIncomes = useMemo(() => {
+    return peerRecords.filter((r) => r.type === 'OTHER_INCOME');
+  }, [peerRecords]);
+
+  const totalOtherExpenseVal = useMemo(() => {
+    return otherExpenses.reduce((s, r) => s + (r.amount || 0), 0);
+  }, [otherExpenses]);
+
+  const totalOtherIncomeVal = useMemo(() => {
+    return otherIncomes.reduce((s, r) => s + (r.amount || 0), 0);
+  }, [otherIncomes]);
+
+  const pendingPeerBalances = useMemo(() => {
+    return currentUser ? getPendingPeerBalances(currentUser.id) : { pendingToReceive: [], pendingToPay: [], totalToReceive: 0, totalToPay: 0, netPeerBalance: 0 };
+  }, [currentUser, peerRecords]);
 
   // Filtered recent transactions
   const recentTransactions = useMemo(() => {
@@ -474,6 +507,316 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
             <span>Transfer</span>
           </button>
         </div>
+      </div>
+
+      {/* ─── 🤝 Peer & Other Financial Flows (Other Expense & Other Income Criteria) ─── */}
+      <div
+        style={{
+          background: 'rgba(255, 255, 255, 0.03)',
+          border: '1.5px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '24px',
+          padding: '20px',
+          boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '20px' }}>🤝</span>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+                Peer &amp; Other Financial Flows
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                Other Expenses (behalf payments) &amp; Other Income (remaining to come)
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => onOpenOtherFlowModal && onOpenOtherFlowModal('SOMEONE_PAID_FOR_ME')}
+            style={{
+              background: 'linear-gradient(135deg, #F97316, #EC4899)',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '6px 12px',
+              color: '#FFF',
+              fontWeight: 800,
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              boxShadow: '0 4px 12px rgba(249,115,22,0.3)',
+            }}
+          >
+            <span>+ Add Flow</span>
+          </button>
+        </div>
+
+        {/* 2 Criteria Cards: Other Expense & Other Income */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+          
+          {/* Criteria 1: Other Expense */}
+          <div
+            onClick={() => onOpenOtherFlowModal && onOpenOtherFlowModal('SOMEONE_PAID_FOR_ME')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.12), rgba(239, 68, 68, 0.08))',
+              border: '1.5px solid rgba(234, 88, 12, 0.3)',
+              borderRadius: '18px',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'transform 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#FB923C', textTransform: 'uppercase' }}>
+                Other Expense
+              </span>
+              <span style={{ fontSize: '13px' }}>💸</span>
+            </div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#FB923C' }}>
+              ₹{totalOtherExpenseVal.toFixed(2)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {pendingPeerBalances.totalToPay > 0
+                ? `You owe: ₹${pendingPeerBalances.totalToPay.toFixed(2)}`
+                : 'Paid on behalf & shared splits'}
+            </div>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenOtherFlowModal && onOpenOtherFlowModal('SOMEONE_PAID_FOR_ME');
+                }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(234, 88, 12, 0.25)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '5px 4px',
+                  color: '#FFF',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                + Paid For Me
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenOtherFlowModal && onOpenOtherFlowModal('PAID_FOR_SOMEONE_ELSE');
+                }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(234, 88, 12, 0.25)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '5px 4px',
+                  color: '#FFF',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                + For Other
+              </button>
+            </div>
+          </div>
+
+          {/* Criteria 2: Other Income */}
+          <div
+            onClick={() => onOpenOtherFlowModal && onOpenOtherFlowModal('REMAINING_TO_RECEIVE')}
+            style={{
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.12), rgba(16, 185, 129, 0.08))',
+              border: '1.5px solid rgba(6, 182, 212, 0.3)',
+              borderRadius: '18px',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'transform 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
+                Other Income
+              </span>
+              <span style={{ fontSize: '13px' }}>⏳</span>
+            </div>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#38BDF8' }}>
+              ₹{(totalOtherIncomeVal + pendingPeerBalances.totalToReceive).toFixed(2)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              {pendingPeerBalances.totalToReceive > 0
+                ? `To collect: ₹${pendingPeerBalances.totalToReceive.toFixed(2)}`
+                : 'Pending returns & collections'}
+            </div>
+            <div style={{ display: 'flex', gap: '6px', marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenOtherFlowModal && onOpenOtherFlowModal('REMAINING_TO_RECEIVE');
+                }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(6, 182, 212, 0.25)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '5px 4px',
+                  color: '#FFF',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                + To Receive
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenOtherFlowModal && onOpenOtherFlowModal('SETTLEMENT_RECEIVED');
+                }}
+                style={{
+                  flex: 1,
+                  background: 'rgba(16, 185, 129, 0.25)',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '5px 4px',
+                  color: '#FFF',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                + Settle Up
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Active Pending Peer Debts & Receivables List */}
+        {(pendingPeerBalances.pendingToReceive.length > 0 || pendingPeerBalances.pendingToPay.length > 0) && (
+          <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '16px', padding: '12px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Clock size={12} color="#F59E0B" />
+              <span>ACTIVE PENDING SETTLEMENTS ({pendingPeerBalances.pendingToReceive.length + pendingPeerBalances.pendingToPay.length})</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+              {/* To Receive */}
+              {pendingPeerBalances.pendingToReceive.map((rec) => {
+                const rem = rec.remainingAmount !== undefined ? rec.remainingAmount : rec.amount;
+                return (
+                  <div
+                    key={rec.id}
+                    style={{
+                      background: 'rgba(6, 182, 212, 0.08)',
+                      border: '1px solid rgba(6, 182, 212, 0.2)',
+                      borderRadius: '12px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {rec.personName || 'Peer'} • {rec.description}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#38BDF8' }}>
+                        ⏳ Remaining to receive from {rec.personName}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 800, color: '#34D399', fontSize: '0.85rem' }}>
+                        +₹{rem.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => onSettlePeerFlow && onSettlePeerFlow(rec.id, rem, rec.personName || 'Peer')}
+                        style={{
+                          background: 'linear-gradient(135deg, #10B981, #059669)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '5px 9px',
+                          color: '#FFF',
+                          fontWeight: 700,
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                          boxShadow: '0 2px 8px rgba(16,185,129,0.3)',
+                        }}
+                      >
+                        <CheckCircle2 size={12} />
+                        <span>Received</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* To Pay */}
+              {pendingPeerBalances.pendingToPay.map((rec) => {
+                const rem = rec.remainingAmount !== undefined ? rec.remainingAmount : rec.amount;
+                return (
+                  <div
+                    key={rec.id}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.2)',
+                      borderRadius: '12px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '0.78rem',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 800, color: 'var(--text-primary)' }}>
+                        {rec.personName || 'Peer'} • {rec.description}
+                      </div>
+                      <div style={{ fontSize: '0.68rem', color: '#F87171' }}>
+                        💸 You owe {rec.personName} (paid on your behalf)
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontWeight: 800, color: '#EF4444', fontSize: '0.85rem' }}>
+                        -₹{rem.toFixed(2)}
+                      </span>
+                      <button
+                        onClick={() => onSettlePeerFlow && onSettlePeerFlow(rec.id, rem, rec.personName || 'Peer')}
+                        style={{
+                          background: 'linear-gradient(135deg, #EF4444, #DC2626)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          padding: '5px 9px',
+                          color: '#FFF',
+                          fontWeight: 700,
+                          fontSize: '0.68rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                      >
+                        <CheckCircle2 size={12} />
+                        <span>Settle</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* TickPocket Zero-Typing Checkbox Banner */}
