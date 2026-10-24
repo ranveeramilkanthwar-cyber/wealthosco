@@ -62,15 +62,45 @@ export class UserSheetSyncEngine {
     // 1. Store in user's isolated local spreadsheet ledger
     appendUserSheetRecord(user.id, record);
 
+    // Calculate updated grand totals across all user records
+    const allRecords = getUserSheetRecords(user.id);
+    const totalIncome = allRecords.filter((r) => r.type === 'INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const totalExpense = allRecords.filter((r) => r.type === 'EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const netBalance = totalIncome - totalExpense;
+    const otherExpense = allRecords.filter((r) => r.type === 'OTHER_EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const otherIncome = allRecords.filter((r) => r.type === 'OTHER_INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const pendingReceivables = allRecords.filter((r) => r.type === 'OTHER_INCOME' && r.settlementStatus === 'PENDING').reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount || 0), 0);
+    const pendingPayables = allRecords.filter((r) => r.type === 'OTHER_EXPENSE' && r.settlementStatus === 'PENDING').reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount || 0), 0);
+
     // 2. Real-time background sync to user's Google Sheet Webhook if configured
     const webhookUrl = this.getUserGoogleSheetUrl(user.id);
     if (webhookUrl && typeof fetch !== 'undefined') {
       try {
+        const payload = {
+          type: 'TRANSACTION_SYNC',
+          action: 'ADD_TRANSACTION',
+          userName: user.name,
+          userEmail: user.email,
+          record: record,
+          totals: {
+            totalIncome,
+            totalExpense,
+            netBalance,
+            otherExpense,
+            otherIncome,
+            pendingReceivables,
+            pendingPayables,
+            runningBankBalance: record.runningBankBalance,
+            runningCashBalance: record.runningCashBalance,
+            totalRecords: allRecords.length,
+          },
+        };
+
         fetch(webhookUrl, {
           method: 'POST',
           mode: 'no-cors', // allows cross-origin webhook dispatch to Google Apps Script
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(record),
+          body: JSON.stringify(payload),
         }).catch((e) => {
           console.warn('[UserSheetSync] Google Sheet webhook dispatch notice:', e);
         });
@@ -92,10 +122,18 @@ export class UserSheetSyncEngine {
   }
 
   /**
-   * Generates clean CSV string with all 17 detailed columns for 1-click Excel download
+   * Generates clean CSV string with all 17 detailed columns and grand totals summary for Excel
    */
   public static generateUserCSV(user: UserProfile): string {
     const records = getUserSheetRecords(user.id);
+    const totalIncome = records.filter((r) => r.type === 'INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const totalExpense = records.filter((r) => r.type === 'EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const netBalance = totalIncome - totalExpense;
+    const otherExpense = records.filter((r) => r.type === 'OTHER_EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const otherIncome = records.filter((r) => r.type === 'OTHER_INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const pendingReceivables = records.filter((r) => r.type === 'OTHER_INCOME' && r.settlementStatus === 'PENDING').reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount || 0), 0);
+    const pendingPayables = records.filter((r) => r.type === 'OTHER_EXPENSE' && r.settlementStatus === 'PENDING').reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount || 0), 0);
+
     const headers = [
       'Transaction ID',
       'Date',
@@ -138,7 +176,20 @@ export class UserSheetSyncEngine {
       r.netWorthSnapshot !== undefined ? Number(r.netWorthSnapshot).toFixed(2) : '""',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+    const summaryRows = [
+      '',
+      '"--- FINANCIAL TOTALS & BALANCES SUMMARY ---"',
+      `"TOTAL INCOME (INR)","${totalIncome.toFixed(2)}"`,
+      `"TOTAL EXPENSES (INR)","${totalExpense.toFixed(2)}"`,
+      `"NET SAVINGS / BALANCE (INR)","${netBalance.toFixed(2)}"`,
+      `"OTHER EXPENSES (BEHALF / I OWE) (INR)","${otherExpense.toFixed(2)}"`,
+      `"OTHER INCOME / RECEIVABLES (INR)","${otherIncome.toFixed(2)}"`,
+      `"PENDING RECEIVABLES TO COLLECT (INR)","${pendingReceivables.toFixed(2)}"`,
+      `"PENDING PAYABLES TO SETTLE (INR)","${pendingPayables.toFixed(2)}"`,
+      `"TOTAL TRANSACTIONS LOGGED","${records.length}"`,
+    ];
+
+    return [headers.join(','), ...rows.map((row) => row.join(',')), ...summaryRows].join('\r\n');
   }
 
   /**
@@ -283,6 +334,25 @@ export class UserSheetSyncEngine {
       </tr>`;
       }).join('')}
     </tbody>
+    <tfoot>
+      <tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 11pt; border-top: 2px solid #38bdf8;">
+        <td colspan="7" style="padding: 12px; text-align: right; text-transform: uppercase;">
+          GRAND TOTALS (${records.length} Transactions):
+        </td>
+        <td style="padding: 12px; text-align: right; color: #38bdf8;">
+          Spent: ₹${totalExpense.toFixed(2)} | Earned: ₹${totalIncome.toFixed(2)}
+        </td>
+        <td colspan="4" style="padding: 12px; text-align: center;">
+          Net Savings Balance: <span style="color: ${netBalance >= 0 ? '#4ade80' : '#f87171'}">₹${netBalance.toFixed(2)}</span>
+        </td>
+        <td style="padding: 12px; text-align: right; color: #a5b4fc;">
+          Bank: ₹${(records[records.length - 1]?.runningBankBalance ?? 0).toFixed(2)}
+        </td>
+        <td style="padding: 12px; text-align: right; color: #a5b4fc;">
+          Cash: ₹${(records[records.length - 1]?.runningCashBalance ?? 0).toFixed(2)}
+        </td>
+      </tr>
+    </tfoot>
   </table>
 </body>
 </html>`;
@@ -323,20 +393,39 @@ export class UserSheetSyncEngine {
   }
 
   /**
-   * Copies formatted TSV data to clipboard for 1-click paste into Google Sheets
+   * Copies formatted TSV data with totals to clipboard for 1-click paste into Google Sheets
    */
   public static async copyForGoogleSheets(user: UserProfile): Promise<boolean> {
     const records = getUserSheetRecords(user.id);
+    const totalIncome = records.filter((r) => r.type === 'INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const totalExpense = records.filter((r) => r.type === 'EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const netBalance = totalIncome - totalExpense;
+    const otherExpense = records.filter((r) => r.type === 'OTHER_EXPENSE').reduce((s, r) => s + (r.amount || 0), 0);
+    const otherIncome = records.filter((r) => r.type === 'OTHER_INCOME').reduce((s, r) => s + (r.amount || 0), 0);
+    const pendingReceivables = records.filter((r) => r.type === 'OTHER_INCOME' && r.settlementStatus === 'PENDING').reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount || 0), 0);
+
     const headers = [
-      'Transaction ID\tDate\tTime\tUser Name\tUser Email\tType\tScenario\tCategory\tDescription\tAmount (₹)\tPayment Account\tPerson Involved\tStatus\tRemaining (₹)',
+      'Transaction ID\tDate\tTime\tUser Name\tUser Email\tType\tScenario\tCategory\tDescription\tAmount (₹)\tPayment Account\tPerson Involved\tStatus\tRemaining (₹)\tBank Balance\tCash Balance',
     ];
 
     const rows = records.map(
       (r) =>
-        `${r.id}\t${r.date}\t${r.time}\t${r.userName}\t${r.userEmail}\t${r.type}\t${r.scenario || 'SELF'}\t${r.category}\t${r.description}\t${r.amount}\t${r.paymentAccount}\t${r.personName || 'Self'}\t${r.settlementStatus || 'SETTLED'}\t${r.remainingAmount !== undefined ? r.remainingAmount : 0}`
+        `${r.id}\t${r.date}\t${r.time}\t${r.userName}\t${r.userEmail}\t${r.type}\t${r.scenario || 'SELF'}\t${r.category}\t${r.description}\t${r.amount}\t${r.paymentAccount}\t${r.personName || 'Self'}\t${r.settlementStatus || 'SETTLED'}\t${r.remainingAmount !== undefined ? r.remainingAmount : 0}\t${r.runningBankBalance !== undefined ? r.runningBankBalance : ''}\t${r.runningCashBalance !== undefined ? r.runningCashBalance : ''}`
     );
 
-    const fullTsv = [headers, ...rows].join('\n');
+    const summaryTsv = [
+      '',
+      `--- FINANCIAL TOTALS & METRICS SUMMARY ---`,
+      `TOTAL INCOME (₹)\t${totalIncome.toFixed(2)}`,
+      `TOTAL EXPENSE (₹)\t${totalExpense.toFixed(2)}`,
+      `NET SAVINGS BALANCE (₹)\t${netBalance.toFixed(2)}`,
+      `OTHER EXPENSE (BEHALF / I OWE) (₹)\t${otherExpense.toFixed(2)}`,
+      `OTHER INCOME / RECEIVABLES (₹)\t${otherIncome.toFixed(2)}`,
+      `PENDING RECEIVABLES TO COLLECT (₹)\t${pendingReceivables.toFixed(2)}`,
+      `TOTAL DETAILED TRANSACTIONS\t${records.length}`,
+    ];
+
+    const fullTsv = [headers, ...rows, ...summaryTsv].join('\n');
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard) {
         await navigator.clipboard.writeText(fullTsv);
@@ -410,23 +499,76 @@ export class UserSheetSyncEngine {
 
   /**
    * Google Apps Script template code that user can copy-paste into Google Sheet
-   * in 1 click (Extensions -> Apps Script -> Deploy as Web App)
+   * in 1 click (Extensions -> Apps Script -> Deploy as Web App).
+   * Automatically sets up a frozen Live Totals Dashboard with dynamic =SUMIF formulas
+   * and appends all transactions with 17 detailed columns in real time.
    */
   public static getGoogleAppsScriptTemplate(): string {
     return `// ========================================================
-// WealthOS Live Google Sheet Webhook Sync Script
-// Paste this in Extensions -> Apps Script in your Google Sheet
-// Click Deploy -> New Deployment -> Web app (Access: Anyone)
-// Copy Web app URL and paste into WealthOS!
+// 💎 WealthOS Live Google Sheet Webhook Sync Engine
+// Automatically updates Google Sheet with transactions & live totals!
+//
+// SETUP IN 3 STEPS:
+// 1. Open your Google Sheet -> Click Extensions -> Apps Script
+// 2. Select all, delete, paste this code, and click Save 💾
+// 3. Click Deploy -> New deployment -> Select 'Web app'
+//    - Execute as: 'Me'
+//    - Who has access: 'Anyone'
+//    - Click Deploy -> Copy 'Web app URL' and paste in WealthOS!
 // ========================================================
 
 function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
     
-    // Auto-create detailed bold headers on first row if empty
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow([
+    // Auto-setup pinned Live Totals Summary & Table Headers if sheet is empty or new
+    if (sheet.getLastRow() < 5) {
+      sheet.clear();
+      
+      // Row 1: Title Banner
+      sheet.getRange(1, 1).setValue("💎 WealthOS Real-Time Financial Ledger • " + (data.userName || "Private Vault"));
+      sheet.getRange(1, 1).setFontSize(14).setFontWeight("bold").setFontColor("#1e1b4b");
+      
+      // Row 2: Live Summary Metric Labels
+      var metricLabels = [
+        "TOTAL EARNED (INCOME)",
+        "TOTAL SPENT (EXPENSE)",
+        "NET SAVINGS BALANCE",
+        "OTHER EXPENSES (OWED)",
+        "REMAINING RECEIVABLES",
+        "RUNNING BANK",
+        "RUNNING CASH",
+        "TOTAL ENTRIES"
+      ];
+      sheet.getRange(2, 1, 1, 8).setValues([metricLabels]);
+      sheet.getRange(2, 1, 1, 8).setFontWeight("bold").setFontSize(9).setBackground("#f1f5f9").setFontColor("#475569");
+      
+      // Row 3: Live Dynamic Formulas (Google Sheets auto-calculates totals instantly on every row added!)
+      var initialBank = (data.totals && data.totals.runningBankBalance !== undefined) ? data.totals.runningBankBalance : 0;
+      var initialCash = (data.totals && data.totals.runningCashBalance !== undefined) ? data.totals.runningCashBalance : 0;
+      var formulas = [
+        '=SUMIF(F6:F, "INCOME", K6:K)',
+        '=SUMIF(F6:F, "EXPENSE", K6:K)',
+        '=A3-B3',
+        '=SUMIF(F6:F, "OTHER_EXPENSE", K6:K)',
+        '=SUMIF(F6:F, "OTHER_INCOME", K6:K)',
+        initialBank,
+        initialCash,
+        '=COUNTA(A6:A)'
+      ];
+      sheet.getRange(3, 1, 1, 8).setValues([formulas]);
+      sheet.getRange(3, 1, 1, 8).setFontWeight("bold").setFontSize(11);
+      sheet.getRange(3, 1).setFontColor("#16a34a"); // Income green
+      sheet.getRange(3, 2).setFontColor("#dc2626"); // Expense red
+      sheet.getRange(3, 3).setFontColor("#2563eb"); // Net blue
+      sheet.getRange(3, 4).setFontColor("#ea580c"); // Other exp orange
+      sheet.getRange(3, 5).setFontColor("#0891b2"); // Other inc cyan
+      sheet.getRange(3, 6).setFontColor("#4f46e5"); // Bank
+      sheet.getRange(3, 7).setFontColor("#059669"); // Cash
+      
+      // Row 5: 17 Detailed Column Headers
+      var headers = [
         "Transaction ID",
         "Date",
         "Time",
@@ -436,7 +578,7 @@ function doPost(e) {
         "Scenario",
         "Category",
         "Sub-Category",
-        "Description",
+        "Description / Purpose",
         "Amount (INR)",
         "Payment Account",
         "Person Involved",
@@ -444,14 +586,15 @@ function doPost(e) {
         "Remaining (INR)",
         "Bank Balance",
         "Cash Balance"
-      ]);
-      sheet.getRange(1, 1, 1, 17).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
-      sheet.setFrozenRows(1);
+      ];
+      sheet.getRange(5, 1, 1, 17).setValues([headers]);
+      sheet.getRange(5, 1, 1, 17).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
+      
+      // Freeze the top 5 rows so the live totals stay pinned on screen!
+      sheet.setFrozenRows(5);
     }
     
-    var data = JSON.parse(e.postData.contents);
-    
-    // Handle Batch Sync
+    // Handle Batch Sync of all records
     if (data.type === "BATCH_SYNC" && data.records && data.records.length > 0) {
       var rows = data.records.map(function(r) {
         return [
@@ -475,32 +618,51 @@ function doPost(e) {
         ];
       });
       sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, 17).setValues(rows);
+      
+      // Update running bank and cash balance snapshots in summary row 3
+      var lastRecord = data.records[data.records.length - 1];
+      if (lastRecord && lastRecord.runningBankBalance !== undefined) {
+        sheet.getRange(3, 6).setValue(Number(lastRecord.runningBankBalance));
+      }
+      if (lastRecord && lastRecord.runningCashBalance !== undefined) {
+        sheet.getRange(3, 7).setValue(Number(lastRecord.runningCashBalance));
+      }
+      
       return ContentService.createTextOutput(JSON.stringify({ status: "success", count: rows.length }))
         .setMimeType(ContentService.MimeType.JSON);
     }
     
     // Handle Single Record Real-Time Sync
+    var r = data.record || data;
     sheet.appendRow([
-      data.id || "",
-      data.date || "",
-      data.time || "",
-      data.userName || "",
-      data.userEmail || "",
-      data.type || "",
-      data.scenario || "SELF",
-      data.category || "",
-      data.subCategory || "General",
-      data.description || "",
-      Number(data.amount) || 0,
-      data.paymentAccount || "",
-      data.personName || "Self",
-      data.settlementStatus || "SETTLED",
-      Number(data.remainingAmount !== undefined ? data.remainingAmount : 0),
-      data.runningBankBalance !== undefined ? Number(data.runningBankBalance) : "",
-      data.runningCashBalance !== undefined ? Number(data.runningCashBalance) : ""
+      r.id || "",
+      r.date || "",
+      r.time || "",
+      r.userName || "",
+      r.userEmail || "",
+      r.type || "",
+      r.scenario || "SELF",
+      r.category || "",
+      r.subCategory || "General",
+      r.description || "",
+      Number(r.amount) || 0,
+      r.paymentAccount || "",
+      r.personName || "Self",
+      r.settlementStatus || "SETTLED",
+      Number(r.remainingAmount !== undefined ? r.remainingAmount : 0),
+      r.runningBankBalance !== undefined ? Number(r.runningBankBalance) : "",
+      r.runningCashBalance !== undefined ? Number(r.runningCashBalance) : ""
     ]);
     
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", id: data.id }))
+    // Update live bank and cash balance snapshots in row 3
+    if (r.runningBankBalance !== undefined) {
+      sheet.getRange(3, 6).setValue(Number(r.runningBankBalance));
+    }
+    if (r.runningCashBalance !== undefined) {
+      sheet.getRange(3, 7).setValue(Number(r.runningCashBalance));
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", id: r.id }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))

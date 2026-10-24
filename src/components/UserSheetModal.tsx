@@ -428,8 +428,79 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
           </div>
 
           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '10px' }}>
-            Enter your Google Apps Script Webhook URL. Every transaction entered will sync live to your Google Sheet!
+            Enter your Google Apps Script Webhook URL. Every transaction entered will sync live to your Google Sheet with updated totals!
           </p>
+
+          {/* Alert if user pasted a document link instead of Apps Script Webhook URL */}
+          {gsheetUrl.includes('docs.google.com/spreadsheets/d/') && (
+            <div
+              style={{
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                marginBottom: '10px',
+                fontSize: '0.74rem',
+                color: '#FDE68A',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 800, color: '#FBBF24' }}>
+                <span>⚠️ Action Required to Enable Live Sheet Sync</span>
+              </div>
+              <span>
+                You pasted a Google Sheet document link. To allow WealthOS to push transactions and live totals directly into your Google Sheet, Google requires a <strong>Web App URL</strong> (`script.google.com`).
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  handleCopyScript();
+                  setShowScriptHelp(true);
+                }}
+                style={{
+                  alignSelf: 'flex-start',
+                  background: 'linear-gradient(135deg, #F59E0B, #D97706)',
+                  color: '#FFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontWeight: 800,
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)',
+                }}
+              >
+                <Code size={13} />
+                <span>Copy 1-Click Apps Script Code (30-Sec Setup)</span>
+              </button>
+            </div>
+          )}
+
+          {gsheetUrl.includes('script.google.com') && (
+            <div
+              style={{
+                background: 'rgba(16, 185, 129, 0.14)',
+                border: '1px solid rgba(16, 185, 129, 0.35)',
+                borderRadius: '10px',
+                padding: '7px 12px',
+                marginBottom: '10px',
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                color: '#34D399',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+              <span>🟢 Live Real-Time Sync Active: Every transaction automatically updates your Google Sheet &amp; Totals!</span>
+            </div>
+          )}
 
           <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
             <input
@@ -612,6 +683,28 @@ export const UserSheetModal: React.FC<UserSheetModalProps> = ({ isOpen, onClose,
                     );
                   })}
                 </tbody>
+                <tfoot
+                  style={{
+                    position: 'sticky',
+                    bottom: 0,
+                    background: 'rgba(15, 23, 42, 0.96)',
+                    backdropFilter: 'blur(10px)',
+                    borderTop: '2px solid rgba(99, 102, 241, 0.5)',
+                    zIndex: 10,
+                  }}
+                >
+                  <tr>
+                    <td colSpan={4} style={{ padding: '9px 10px', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      GRAND TOTALS ({records.length} Transactions):
+                    </td>
+                    <td colSpan={3} style={{ padding: '9px 10px', fontSize: '0.72rem', color: '#94A3B8' }}>
+                      <span style={{ color: '#10B981', fontWeight: 800 }}>+₹{totalIncome.toFixed(0)}</span> / <span style={{ color: '#EF4444', fontWeight: 800 }}>-₹{totalExpense.toFixed(0)}</span>
+                    </td>
+                    <td style={{ padding: '9px 10px', textAlign: 'right', fontWeight: 900, color: netBalance >= 0 ? '#34D399' : '#F87171', fontSize: '0.84rem' }}>
+                      Net: ₹{netBalance.toFixed(2)}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}

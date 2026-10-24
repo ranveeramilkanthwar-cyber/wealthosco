@@ -203,4 +203,70 @@ describe('Peer Flows, Detailed Sheets, and Interconnected Starting Balances', ()
     expect(prefs.movingBackground).toBe(true);
     expect(prefs.glassOpacity).toBe(0.9);
   });
+
+  it('6. Ensures live grand totals and formulas are included in CSV, HTML tfoot, TSV, and Apps Script template', async () => {
+    UserSheetSyncEngine.syncTransaction(mockUser, {
+      id: 'tx_income_01',
+      date: '2026-10-24',
+      time: '12:00 PM',
+      type: 'INCOME',
+      category: 'Consulting',
+      description: 'Client payment',
+      amount: 10000,
+      paymentAccount: 'Bank',
+    });
+
+    UserSheetSyncEngine.syncTransaction(mockUser, {
+      id: 'tx_expense_01',
+      date: '2026-10-24',
+      time: '12:30 PM',
+      type: 'EXPENSE',
+      category: 'Software',
+      description: 'Hosting',
+      amount: 2500,
+      paymentAccount: 'Credit Card',
+    });
+
+    // 1. CSV Totals Check
+    const csv = UserSheetSyncEngine.generateUserCSV(mockUser);
+    expect(csv).toContain('--- FINANCIAL TOTALS & BALANCES SUMMARY ---');
+    expect(csv).toContain('"TOTAL INCOME (INR)","10000.00"');
+    expect(csv).toContain('"TOTAL EXPENSES (INR)","2500.00"');
+    expect(csv).toContain('"NET SAVINGS / BALANCE (INR)","7500.00"');
+
+    // 2. HTML Excel tfoot Check
+    const html = UserSheetSyncEngine.generateStyledExcelHTML(mockUser);
+    expect(html).toContain('<tfoot>');
+    expect(html).toContain('GRAND TOTALS');
+    expect(html).toContain('Spent: ₹2500.00');
+    expect(html).toContain('Earned: ₹10000.00');
+    expect(html).toContain('Net Savings Balance:');
+
+    // 3. TSV Clipboard Totals Check
+    let clipboardText = '';
+    Object.defineProperty(globalThis, 'navigator', {
+      value: {
+        clipboard: {
+          writeText: async (t: string) => {
+            clipboardText = t;
+          },
+        },
+      },
+      configurable: true,
+      writable: true,
+    });
+    const copied = await UserSheetSyncEngine.copyForGoogleSheets(mockUser);
+    expect(copied).toBe(true);
+    expect(clipboardText).toContain('--- FINANCIAL TOTALS & METRICS SUMMARY ---');
+    expect(clipboardText).toContain('TOTAL INCOME (₹)\t10000.00');
+    expect(clipboardText).toContain('TOTAL EXPENSE (₹)\t2500.00');
+    expect(clipboardText).toContain('NET SAVINGS BALANCE (₹)\t7500.00');
+
+    // 4. Google Apps Script Live Totals Formulas Check
+    const script = UserSheetSyncEngine.getGoogleAppsScriptTemplate();
+    expect(script).toContain('=SUMIF(F6:F, "INCOME", K6:K)');
+    expect(script).toContain('=SUMIF(F6:F, "EXPENSE", K6:K)');
+    expect(script).toContain('=A3-B3');
+    expect(script).toContain('sheet.setFrozenRows(5)');
+  });
 });

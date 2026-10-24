@@ -198,6 +198,43 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
     setThemePrefs((prev) => ({ ...prev, ...newPrefs }));
   };
 
+  // Helper to reliably sync every transaction to User Google Sheet & Excel with live running balances
+  const syncWithUserSheet = (txData: {
+    id: string;
+    date?: string;
+    time?: string;
+    type: string;
+    category: string;
+    subCategory?: string;
+    description: string;
+    amount: number;
+    paymentAccount: string;
+    scenario?: 'SELF' | 'SOMEONE_PAID_FOR_ME' | 'PAID_FOR_SOMEONE_ELSE' | 'REMAINING_TO_RECEIVE' | 'SETTLEMENT_RECEIVED' | 'SETTLEMENT_PAID' | 'TRANSFER' | 'CALIBRATION';
+    personName?: string;
+    settlementStatus?: 'SETTLED' | 'PENDING' | 'PARTIAL';
+    remainingAmount?: number;
+    dueDate?: string;
+    runningBankBalance?: number;
+    runningCashBalance?: number;
+    netWorthSnapshot?: number;
+    notes?: string;
+  }) => {
+    const curBank = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+    const curCash = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
+    const bBal = curBank ? Number(fromMicroUnits(curBank.balance_micro)) : 0;
+    const cBal = curCash ? Number(fromMicroUnits(curCash.balance_micro)) : 0;
+    const nw = Number(fromMicroUnits(netWorth));
+
+    UserSheetSyncEngine.syncTransaction(user, {
+      ...txData,
+      date: txData.date || new Date().toISOString().slice(0, 10),
+      time: txData.time || new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      runningBankBalance: txData.runningBankBalance !== undefined ? txData.runningBankBalance : bBal,
+      runningCashBalance: txData.runningCashBalance !== undefined ? txData.runningCashBalance : cBal,
+      netWorthSnapshot: txData.netWorthSnapshot !== undefined ? txData.netWorthSnapshot : nw,
+    });
+  };
+
   // Change Starting Balances from Profile
   const handleProfileUpdateStartingBalances = (cash: number, bank: number, cc: number) => {
     try {
@@ -215,7 +252,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
       // Persist in user profile database
       AuthEngine.updateUserProfile(user.id, { initialCash: cash, initialBank: bank });
 
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: 'start_calib_' + Date.now(),
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -470,7 +507,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
       });
       syncPersistence();
       soundAndVoice.playSuccessChime();
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: result.transaction.id,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -517,7 +554,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
 
       syncPersistence();
       soundAndVoice.playSuccessChime();
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: result.transaction.id,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -548,7 +585,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
       });
       syncPersistence();
       soundAndVoice.playSuccessChime();
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: result.transaction.id,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -672,7 +709,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
           description: entry.description,
         });
         syncPersistence();
-        UserSheetSyncEngine.syncTransaction(user, {
+        syncWithUserSheet({
           id: result.transaction.id,
           date: new Date().toISOString().slice(0, 10),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -693,7 +730,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
           description: entry.description,
         });
         syncPersistence();
-        UserSheetSyncEngine.syncTransaction(user, {
+        syncWithUserSheet({
           id: result.transaction.id,
           date: new Date().toISOString().slice(0, 10),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -737,7 +774,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
             ],
           });
           syncPersistence();
-          UserSheetSyncEngine.syncTransaction(user, {
+          syncWithUserSheet({
             id: result.transaction.id,
             date: new Date().toISOString().slice(0, 10),
             time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -770,7 +807,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
             description: entry.description,
           });
           syncPersistence();
-          UserSheetSyncEngine.syncTransaction(user, {
+          syncWithUserSheet({
             id: result.transaction.id,
             date: new Date().toISOString().slice(0, 10),
             time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -830,7 +867,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         });
         syncPersistence();
         soundAndVoice.playSuccessChime();
-        UserSheetSyncEngine.syncTransaction(user, {
+        syncWithUserSheet({
           id: result.transaction.id,
           date: (tx.date ? new Date(tx.date) : new Date()).toISOString().slice(0, 10),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -855,7 +892,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         });
         syncPersistence();
         soundAndVoice.playSuccessChime();
-        UserSheetSyncEngine.syncTransaction(user, {
+        syncWithUserSheet({
           id: result.transaction.id,
           date: (tx.date ? new Date(tx.date) : new Date()).toISOString().slice(0, 10),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -881,7 +918,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         });
         syncPersistence();
         soundAndVoice.playSuccessChime();
-        UserSheetSyncEngine.syncTransaction(user, {
+        syncWithUserSheet({
           id: result.transaction.id,
           date: (tx.date ? new Date(tx.date) : new Date()).toISOString().slice(0, 10),
           time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -973,8 +1010,8 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
       const curCash = Number(fromMicroUnits(cashAcc.balance_micro));
       const curNetWorth = Number(fromMicroUnits(netWorth));
 
-      // Sync to User Sheet & Database with all 17 detailed columns
-      UserSheetSyncEngine.syncTransaction(user, {
+      // Sync to User Sheet & Database with all 17 detailed columns and live totals
+      syncWithUserSheet({
         id: txId,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -1063,7 +1100,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
 
       syncPersistence();
       soundAndVoice.playSuccessChime();
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: result.transaction.id,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -1115,7 +1152,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
 
       syncPersistence();
       soundAndVoice.playSuccessChime();
-      UserSheetSyncEngine.syncTransaction(user, {
+      syncWithUserSheet({
         id: result.transaction.id,
         date: new Date().toISOString().slice(0, 10),
         time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -1389,7 +1426,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
                 });
                 syncPersistence();
                 soundAndVoice.playSuccessChime();
-                UserSheetSyncEngine.syncTransaction(user, {
+                syncWithUserSheet({
                   id: res.transaction.id,
                   date: new Date().toISOString().slice(0, 10),
                   time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -1470,7 +1507,7 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
               });
               syncPersistence();
               soundAndVoice.playSuccessChime();
-              UserSheetSyncEngine.syncTransaction(user, {
+              syncWithUserSheet({
                 id: result.transaction.id,
                 date: new Date().toISOString().slice(0, 10),
                 time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
