@@ -17,38 +17,52 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
 }) => {
   const [progress, setProgress] = useState(0);
   const [dontShowAgain, setDontShowAgain] = useState(!initiallyShowOnStart);
-  const [isClosing, setIsClosing] = useState(false);
+  const [isPullingDashboard, setIsPullingDashboard] = useState(false);
+  const [coinPosition, setCoinPosition] = useState({ x: 5, y: 15, rot: 0 });
 
   useEffect(() => {
     // Play welcoming chime
     try {
       soundAndVoice.playSuccessChime();
-    } catch {
-      // Audio autoplay policy fallback
-    }
+    } catch {}
 
-    // Auto-progress timer (3.5 seconds)
+    // Auto-progress timer (4.2 seconds total: 3.5s rolling, 0.7s curtain pull)
     const startTime = Date.now();
-    const duration = 3500;
+    const duration = 3800;
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min(100, Math.round((elapsed / duration) * 100));
       setProgress(pct);
+
+      // Physics of rolling coin moving from top-left, looping down, and hitting the bottom vault
+      // X traverses across 5% -> 85% -> 50%
+      // Y traverses downwards from 15% -> 88%
+      const t = pct / 100;
+      const curX = 10 + 75 * Math.sin(t * Math.PI * 1.5) ** 2;
+      const curY = 12 + 76 * (t ** 1.3);
+      const rot = t * 1440; // 4 full 360-degree rolls
+
+      setCoinPosition({ x: curX, y: curY, rot });
+
+      if (pct >= 95 && !isPullingDashboard) {
+        setIsPullingDashboard(true);
+      }
+
       if (pct >= 100) {
         clearInterval(interval);
-        handleClose();
+        handleFinish();
       }
-    }, 40);
+    }, 30);
 
     return () => clearInterval(interval);
   }, []);
 
-  const handleClose = () => {
-    setIsClosing(true);
+  const handleFinish = () => {
+    setIsPullingDashboard(true);
     setTimeout(() => {
       onFinish();
-    }, 350);
+    }, 450);
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,80 +79,104 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
-        background: 'radial-gradient(ellipse at center, rgba(17, 24, 39, 0.94) 0%, rgba(5, 7, 15, 0.98) 100%)',
-        backdropFilter: 'blur(25px)',
-        WebkitBackdropFilter: 'blur(25px)',
+        background: 'radial-gradient(ellipse at center, rgba(12, 17, 32, 0.96) 0%, rgba(4, 6, 14, 0.99) 100%)',
+        backdropFilter: 'blur(28px)',
+        WebkitBackdropFilter: 'blur(28px)',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '20px',
-        opacity: isClosing ? 0 : 1,
-        transform: isClosing ? 'scale(1.05)' : 'scale(1)',
-        transition: 'opacity 0.35s ease, transform 0.35s ease',
+        transform: isPullingDashboard ? 'translateY(-100%) scale(0.98)' : 'translateY(0) scale(1)',
+        opacity: isPullingDashboard ? 0 : 1,
+        transition: 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.45s ease',
         overflow: 'hidden',
       }}
     >
-      {/* Ambient Floating Orbs & Glow */}
+      {/* Dynamic Rolling Golden Coin (Rolls to bottom and pulls up dashboard) */}
       <div
         style={{
           position: 'absolute',
-          width: '420px',
-          height: '420px',
+          left: `${coinPosition.x}%`,
+          top: `${coinPosition.y}%`,
+          transform: `translate(-50%, -50%) rotate(${coinPosition.rot}deg)`,
+          width: '68px',
+          height: '68px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, rgba(139, 92, 246, 0.05) 70%)',
-          top: '20%',
-          left: '30%',
-          filter: 'blur(60px)',
-          animation: 'pulseGlow 4s ease-in-out infinite alternate',
+          background: 'linear-gradient(135deg, #FFE066 0%, #F59E0B 50%, #D97706 100%)',
+          boxShadow: '0 0 35px rgba(245, 158, 11, 0.75), inset 0 2px 4px rgba(255,255,255,0.8), inset 0 -2px 6px rgba(0,0,0,0.4)',
+          border: '3px solid #FEF08A',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '32px',
+          zIndex: 10001,
           pointerEvents: 'none',
+          transition: 'box-shadow 0.1s ease',
         }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          width: '320px',
-          height: '320px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(16, 185, 129, 0.22) 0%, transparent 70%)',
-          bottom: '15%',
-          right: '25%',
-          filter: 'blur(50px)',
-          animation: 'pulseGlow 5s ease-in-out infinite alternate-reverse',
-          pointerEvents: 'none',
-        }}
-      />
+      >
+        <span>₹</span>
+      </div>
 
-      {/* Floating Particles */}
-      {[
-        { symbol: '₹', top: '15%', left: '18%', delay: '0s', size: '26px' },
-        { symbol: '✨', top: '22%', right: '20%', delay: '0.8s', size: '22px' },
-        { symbol: '📊', bottom: '25%', left: '15%', delay: '1.2s', size: '28px' },
-        { symbol: '💰', bottom: '20%', right: '18%', delay: '0.4s', size: '24px' },
-        { symbol: '💎', top: '48%', left: '10%', delay: '1.6s', size: '20px' },
-      ].map((p, idx) => (
+      {/* Sparkle Trail Behind Rolling Coin */}
+      <div
+        style={{
+          position: 'absolute',
+          left: `${coinPosition.x}%`,
+          top: `${coinPosition.y}%`,
+          transform: 'translate(-50%, -50%)',
+          pointerEvents: 'none',
+          zIndex: 10000,
+        }}
+      >
+        <div style={{ position: 'relative' }}>
+          <span style={{ position: 'absolute', top: -15, left: -20, fontSize: '18px', animation: 'sparklePop 0.8s infinite' }}>✨</span>
+          <span style={{ position: 'absolute', top: 12, left: -25, fontSize: '14px', animation: 'sparklePop 0.6s infinite 0.2s' }}>🌟</span>
+          <span style={{ position: 'absolute', top: -25, left: 15, fontSize: '16px', animation: 'sparklePop 0.7s infinite 0.4s' }}>💫</span>
+        </div>
+      </div>
+
+      {/* Vault Trigger at Bottom of Screen */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '6px',
+          zIndex: 10000,
+        }}
+      >
         <div
-          key={idx}
           style={{
-            position: 'absolute',
-            top: p.top,
-            left: p.left,
-            right: p.right,
-            bottom: p.bottom,
-            fontSize: p.size,
-            opacity: 0.45,
-            filter: 'drop-shadow(0 0 12px rgba(255,255,255,0.4))',
-            animation: `floatUp 3s ease-in-out infinite alternate`,
-            animationDelay: p.delay,
-            pointerEvents: 'none',
+            background: 'rgba(99, 102, 241, 0.25)',
+            border: '2px dashed rgba(99, 102, 241, 0.6)',
+            borderRadius: '99px',
+            padding: '8px 24px',
+            color: '#A5B4FC',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 0 25px rgba(99, 102, 241, 0.35)',
+            animation: 'pulseGlow 2s infinite',
           }}
         >
-          {p.symbol}
+          <span>🏦 WealthOS Vault Portal</span>
+          <span>↓</span>
         </div>
-      ))}
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+          Coin rolls to end of page to pull and launch dashboard
+        </span>
+      </div>
 
       {/* Skip Button Top Right */}
       <button
-        onClick={handleClose}
+        onClick={handleFinish}
         style={{
           position: 'absolute',
           top: '24px',
@@ -146,7 +184,7 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
           background: 'rgba(255, 255, 255, 0.08)',
           border: '1px solid rgba(255, 255, 255, 0.15)',
           borderRadius: '99px',
-          padding: '8px 16px',
+          padding: '8px 18px',
           color: '#cbd5e1',
           fontSize: '0.82rem',
           fontWeight: 700,
@@ -156,52 +194,83 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
           gap: '6px',
           backdropFilter: 'blur(10px)',
           transition: 'all 0.15s ease',
+          zIndex: 10002,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.18)')}
         onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.08)')}
       >
-        <span>Skip Intro</span>
+        <span>Skip &amp; Open Dashboard</span>
         <X size={14} />
       </button>
 
-      {/* Main Glass Center Card */}
+      {/* Ambient Moving Orbs */}
+      <div
+        style={{
+          position: 'absolute',
+          width: '450px',
+          height: '450px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.28) 0%, transparent 70%)',
+          top: '15%',
+          left: '20%',
+          filter: 'blur(60px)',
+          animation: 'pulseGlow 4s ease-in-out infinite alternate',
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        style={{
+          position: 'absolute',
+          width: '380px',
+          height: '380px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%)',
+          bottom: '20%',
+          right: '20%',
+          filter: 'blur(55px)',
+          animation: 'pulseGlow 5s ease-in-out infinite alternate-reverse',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Center Welcome Card */}
       <div
         style={{
           position: 'relative',
-          maxWidth: '520px',
+          maxWidth: '540px',
           width: '100%',
           background: 'rgba(255, 255, 255, 0.05)',
-          border: '1.5px solid rgba(255, 255, 255, 0.14)',
+          border: '1.5px solid rgba(255, 255, 255, 0.15)',
           borderRadius: '32px',
-          padding: '40px 32px 32px',
-          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+          padding: '36px 30px 28px',
+          boxShadow: '0 30px 80px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          zIndex: 10,
         }}
       >
-        {/* Animated Rotating 3D Coin Badge */}
+        {/* Animated Badge */}
         <div
           style={{
-            width: '90px',
-            height: '90px',
-            borderRadius: '28px',
+            width: '84px',
+            height: '84px',
+            borderRadius: '26px',
             background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '44px',
+            fontSize: '42px',
             boxShadow: '0 16px 40px rgba(99, 102, 241, 0.45)',
-            marginBottom: '22px',
-            transform: 'rotate(-5deg)',
-            animation: 'coinBounce 2.5s ease-in-out infinite alternate',
+            marginBottom: '18px',
+            animation: 'coinBounce 2s ease-in-out infinite alternate',
           }}
         >
           🪙
         </div>
 
-        {/* Brand Title */}
+        {/* Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
           <h1
             style={{
@@ -225,38 +294,36 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
               fontWeight: 800,
               padding: '3px 9px',
               borderRadius: '99px',
-              letterSpacing: '0.04em',
             }}
           >
-            v5.0 LIVE
+            v5.0 PRO
           </span>
         </div>
 
-        {/* Personalized Welcome */}
-        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#F8FAFC', marginBottom: '8px' }}>
-          Welcome back, {userName}! ✨
+        <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#F8FAFC', marginBottom: '6px' }}>
+          Welcome, {userName}! 🌟
         </div>
 
         <p
           style={{
-            fontSize: '0.86rem',
+            fontSize: '0.84rem',
             color: '#94A3B8',
-            maxWidth: '420px',
+            maxWidth: '430px',
             lineHeight: 1.5,
-            margin: '0 0 24px 0',
+            margin: '0 0 20px 0',
           }}
         >
-          Zero typing expense tracking with live Excel &amp; Google Sheet cloud sync, transparent aesthetic glass, and silent 64-bit accounting security.
+          Smart personal finance with Other Expenses (behalf payments), Other Income (pending to come), and 1-click cloud sync to your linked sheet!
         </p>
 
-        {/* Feature Highlights Pills */}
+        {/* 3 Pillars */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(3, 1fr)',
             gap: '8px',
             width: '100%',
-            marginBottom: '26px',
+            marginBottom: '22px',
           }}
         >
           <div
@@ -294,7 +361,7 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
             }}
           >
             <FileSpreadsheet size={18} color="#10B981" />
-            <span>Excel / Sheets</span>
+            <span>Detailed Sheets</span>
           </div>
 
           <div
@@ -313,102 +380,94 @@ export const AnimatedIntro: React.FC<AnimatedIntroProps> = ({
             }}
           >
             <ShieldCheck size={18} color="#6366F1" />
-            <span>Zero Drift</span>
+            <span>Double-Entry CA</span>
           </div>
         </div>
 
-        {/* Enter Button */}
+        {/* Rolling Progress Bar */}
+        <div style={{ width: '100%', marginBottom: '18px' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              color: '#94A3B8',
+              marginBottom: '6px',
+            }}
+          >
+            <span>Rolling coin to unlock vault...</span>
+            <span style={{ color: '#F59E0B' }}>{progress}%</span>
+          </div>
+          <div
+            style={{
+              width: '100%',
+              height: '8px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              borderRadius: '99px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                width: `${progress}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, #6366F1, #F59E0B, #10B981)',
+                borderRadius: '99px',
+                transition: 'width 0.04s linear',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Enter Dashboard Action Button */}
         <button
-          onClick={handleClose}
+          onClick={handleFinish}
           style={{
             width: '100%',
-            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)',
+            background: 'linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #EC4899 100%)',
             border: 'none',
-            borderRadius: '16px',
-            padding: '16px 24px',
-            color: '#FFFFFF',
+            borderRadius: '18px',
+            padding: '14px 20px',
+            color: '#FFF',
             fontWeight: 800,
-            fontSize: '1rem',
+            fontSize: '0.96rem',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '8px',
-            boxShadow: '0 10px 30px rgba(99, 102, 241, 0.45)',
-            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-            marginBottom: '16px',
+            boxShadow: '0 10px 30px rgba(99, 102, 241, 0.4)',
+            transition: 'transform 0.15s ease',
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px) scale(1.01)';
-            e.currentTarget.style.boxShadow = '0 14px 40px rgba(99, 102, 241, 0.6)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0) scale(1)';
-            e.currentTarget.style.boxShadow = '0 10px 30px rgba(99, 102, 241, 0.45)';
-          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
-          <span>Enter Dashboard</span>
+          <span>Enter Dashboard Now</span>
           <ArrowRight size={18} />
         </button>
 
-        {/* Progress bar */}
-        <div
-          style={{
-            width: '100%',
-            height: '4px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '2px',
-            overflow: 'hidden',
-            marginBottom: '14px',
-          }}
-        >
-          <div
-            style={{
-              height: '100%',
-              width: `${progress}%`,
-              background: 'linear-gradient(90deg, #6366F1, #10B981)',
-              borderRadius: '2px',
-              transition: 'width 0.05s linear',
-            }}
-          />
-        </div>
-
-        {/* Don't show again toggle */}
+        {/* Checkbox Don't show on start */}
         <label
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontSize: '0.74rem',
-            color: '#94A3B8',
+            marginTop: '16px',
+            fontSize: '0.76rem',
+            color: '#64748B',
             cursor: 'pointer',
-            userSelect: 'none',
           }}
         >
           <input
             type="checkbox"
             checked={dontShowAgain}
             onChange={handleCheckboxChange}
-            style={{ accentColor: '#6366F1', cursor: 'pointer' }}
+            style={{ cursor: 'pointer' }}
           />
-          <span>Don’t show intro again automatically</span>
+          <span>Don’t show this intro automatically next time</span>
         </label>
       </div>
-
-      <style>{`
-        @keyframes coinBounce {
-          0% { transform: translateY(0px) rotate(-6deg); }
-          100% { transform: translateY(-8px) rotate(6deg); }
-        }
-        @keyframes pulseGlow {
-          0% { transform: scale(1) translate(0, 0); opacity: 0.6; }
-          100% { transform: scale(1.2) translate(20px, -20px); opacity: 0.9; }
-        }
-        @keyframes floatUp {
-          0% { transform: translateY(0px); }
-          100% { transform: translateY(-14px); }
-        }
-      `}</style>
     </div>
   );
 };
