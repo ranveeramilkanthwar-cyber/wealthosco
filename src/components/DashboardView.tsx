@@ -35,8 +35,71 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   netSurplusMicro,
 }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
+      {/* ─── 📐 Mathematical Equation Connections: Net Worth & Flow Balances ─── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '12px',
+      }}>
+        {/* Equation 1: Net Worth = Assets - Liabilities */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1))',
+          border: '1.5px solid rgba(99,102,241,0.3)',
+          borderRadius: '16px',
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+        }}>
+          <span style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+            Balance Sheet Equation:
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ color: '#34d399' }}>💎 Assets ({formatCurrency(totalAssetsMicro)})</span>
+            <span style={{ color: '#fb7185', fontWeight: 900, fontSize: '1rem' }}>-</span>
+            <span style={{ color: '#fbbf24' }}>💳 Liab ({formatCurrency(totalLiabilitiesMicro)})</span>
+            <span style={{ color: '#818cf8', fontWeight: 900, fontSize: '1rem' }}>=</span>
+            <span style={{ color: '#f8fafc', background: 'rgba(99,102,241,0.25)', padding: '2px 8px', borderRadius: '6px' }}>
+              🏛️ Net Worth ({formatCurrency(netWorthMicro)})
+            </span>
+          </div>
+        </div>
+
+        {/* Equation 2: Net Surplus = Income - OpEx */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(56,189,248,0.1))',
+          border: '1.5px solid rgba(16,185,129,0.3)',
+          borderRadius: '16px',
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
+          fontSize: '0.8rem',
+          fontWeight: 700,
+        }}>
+          <span style={{ color: 'var(--text-secondary)', textTransform: 'uppercase', fontSize: '0.72rem', letterSpacing: '0.05em' }}>
+            Income & OpEx Equation:
+          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ color: '#10b981' }}>💰 Inflows (+{formatCurrency(monthlyIncomeMicro)})</span>
+            <span style={{ color: '#ef4444', fontWeight: 900, fontSize: '1rem' }}>-</span>
+            <span style={{ color: '#fb7185' }}>💸 OpEx (-{formatCurrency(monthlyExpenseMicro)})</span>
+            <span style={{ color: '#38bdf8', fontWeight: 900, fontSize: '1rem' }}>=</span>
+            <span style={{ color: '#38bdf8', background: 'rgba(56,189,248,0.2)', padding: '2px 8px', borderRadius: '6px' }}>
+              📈 Net Surplus ({formatCurrency(netSurplusMicro)})
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* 4 Top Net Worth & Flow Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
         

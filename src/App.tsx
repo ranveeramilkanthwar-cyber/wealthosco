@@ -102,11 +102,36 @@ interface AuthenticatedAppProps {
 function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
   // 1. Initialize Financial Engine Core with LocalStorage Persistence scoped to user.id
   const [ledger] = useState(() => {
-    const savedAccounts = loadSavedAccounts(user.id);
+    let savedAccounts = loadSavedAccounts(user.id);
+    const savedTransactions = loadSavedTransactions(user.id);
+    const hasInitialBalance = (user.initialCash ?? 0) > 0 || (user.initialBank ?? 0) > 0;
+    const isDone = localStorage.getItem(`wealthos_user_${user.id}_initial_setup_completed`);
+
+    // If starting fresh with registered initial balances
+    if (!isDone && savedTransactions.length === 0 && hasInitialBalance) {
+      const initCashMicro = toMicroUnits(user.initialCash ?? 0);
+      const initBankMicro = toMicroUnits(user.initialBank ?? 0);
+      const initEquityMicro = initCashMicro + initBankMicro;
+
+      savedAccounts = savedAccounts.map((a) => {
+        if (a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) {
+          return { ...a, balance_micro: initBankMicro };
+        }
+        if (a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) {
+          return { ...a, balance_micro: initCashMicro };
+        }
+        if (a.id === 'acc_equity_opening' || a.account_type === 'EQUITY') {
+          return { ...a, balance_micro: initEquityMicro };
+        }
+        return a;
+      });
+      saveAccounts(savedAccounts, user.id);
+      localStorage.setItem(`wealthos_user_${user.id}_initial_setup_completed`, 'true');
+    }
+
     const l = new DoubleEntryLedger(savedAccounts);
     
     // Hydrate existing saved transactions for THIS user
-    const savedTransactions = loadSavedTransactions(user.id);
     const savedPostings = loadSavedPostings(user.id);
 
     for (const tx of savedTransactions) {
@@ -602,27 +627,12 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
     }
   };
 
-  // Safe-to-Spend Coin Drop
+  // Safe-to-Spend Coin Drop (Opens Add Modal for user's real expense)
   const handleDropCoin = () => {
-    try {
-      soundAndVoice.playCoinClink();
-      const bankAcc = accounts.find((a) => a.account_subtype === 'BANK') || accounts[0];
-      const foodAcc = accounts.find((a) => a.id === 'acc_expense_food') || accounts[5];
-
-      const result = service.recordExpense({
-        sourceAccountId: bankAcc.id,
-        expenseAccountId: foodAcc.id,
-        amountMicro: toMicroUnits(150),
-        date: new Date().toISOString(),
-        description: 'Mango Gelato Treat (Quick Orb Drop)',
-      });
-
-      syncPersistence();
-      triggerUndoBanner(result.transaction.id, 'Spent ₹150 on Gelato Treat');
-      setMascotSpeech('Clink! 🪙 ₹150 moved from Bank Jar to Treats Jar in 0.4ms!');
-    } catch (err: any) {
-      setMascotSpeech(`Error: ${err.message}`);
-    }
+    soundAndVoice.playCoinClink();
+    setAddModalDefaultType('EXPENSE');
+    setIsAddModalOpen(true);
+    setMascotSpeech('Tap to record your actual treat or spending! 🪙');
   };
 
   // Natural Language & Magic Command Handler
@@ -1404,7 +1414,10 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
               postings={postings}
               onDropCoin={handleDropCoin}
               onExecuteCommand={handleExecuteCommand}
-              onOpenDepositModal={() => handleRecordDeposit(toMicroUnits(50000), 'Opening Capital Deposit')}
+              onOpenDepositModal={() => {
+                setAddModalDefaultType('INCOME');
+                setIsAddModalOpen(true);
+              }}
             />
           ) : (
             <SimpleHomeView
@@ -1462,6 +1475,8 @@ function AuthenticatedApp({ user, onLogout }: AuthenticatedAppProps) {
         {activeTab === 'tickpocket' && (
           <TickPocketView
             isPrivate={isPrivate}
+            accounts={accounts}
+            transactions={transactions}
             onCommitDoubleEntry={handleTickPocketCommit}
           />
         )}

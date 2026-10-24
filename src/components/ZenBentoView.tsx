@@ -76,8 +76,15 @@ export const ZenBentoView: React.FC<ZenBentoViewProps> = ({
 
   // Find live accounts from ledger (Robust Matching)
   const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
+  const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
   const ccAcc = accounts.find((a) => a.id === 'acc_credit_card' || (a.account_type === 'LIABILITY' && a.account_subtype === 'CREDIT_CARD'));
   const foodAcc = accounts.find((a) => a.account_type === 'EXPENSE') || accounts[5];
+
+  const bankBal = bankAcc ? bankAcc.balance_micro : 0n;
+  const cashBal = cashAcc ? cashAcc.balance_micro : 0n;
+  const totalLiquid = bankBal + cashBal;
+  const ccBal = ccAcc ? ccAcc.balance_micro : 0n;
+  const netLiquid = totalLiquid - ccBal;
 
   const accountMap = new Map(accounts.map((a) => [a.id, a]));
 
@@ -234,35 +241,75 @@ export const ZenBentoView: React.FC<ZenBentoViewProps> = ({
         {/* Right Column: 3D Jars & Live Double-Entry Stream */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
           
-          {/* 3D Wallets / Jars */}
-          <div className="jars-grid">
+          {/* Mathematical Connection Banner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid var(--border-subtle)',
+            borderRadius: '14px',
+            padding: '10px 14px',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            flexWrap: 'wrap'
+          }}>
+            <span style={{ color: '#38bdf8' }}>🏦 Bank: {formatCurrency(bankBal)}</span>
+            <span style={{ color: '#34d399', fontWeight: 900, fontSize: '0.95rem' }}>+</span>
+            <span style={{ color: '#34d399' }}>💵 Cash: {formatCurrency(cashBal)}</span>
+            <span style={{ color: '#f59e0b', fontWeight: 900, fontSize: '0.95rem' }}>=</span>
+            <span style={{ color: '#818cf8', background: 'rgba(99,102,241,0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+              💰 Liquid: {formatCurrency(totalLiquid)}
+            </span>
+            <span style={{ color: '#fb7185', fontWeight: 900, fontSize: '0.95rem', marginLeft: '6px' }}>-</span>
+            <span style={{ color: '#fb7185' }}>💳 CC: {formatCurrency(ccBal)}</span>
+            <span style={{ color: '#10b981', fontWeight: 900, fontSize: '0.95rem' }}>=</span>
+            <span style={{ color: '#34d399', background: 'rgba(16,185,129,0.15)', padding: '2px 8px', borderRadius: '6px' }}>
+              🛡️ Net Available: {formatCurrency(netLiquid)}
+            </span>
+          </div>
+
+          {/* 3D Wallets / Jars (4 Core Jars) */}
+          <div className="jars-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
             {/* Jar 1: Primary Bank */}
             <div className="glass jar-card">
               <div className="jar-icon">{mode === 'kid' ? '🐷' : '🏦'}</div>
               <div className="jar-title">
-                {mode === 'kid' ? 'Giant Piggy Vault' : mode === 'zen' ? (bankAcc?.name || 'Primary Bank') : '1010 • Asset:Bank:Primary'}
+                {mode === 'kid' ? 'Giant Piggy Vault' : mode === 'zen' ? (bankAcc?.name || 'Primary Bank') : '1010 • Asset:Bank'}
               </div>
-              <div className={`jar-val num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ color: '#34d399' }}>
-                {bankAcc ? formatCurrency(bankAcc.balance_micro) : '₹0.00'}
+              <div className={`jar-val num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ color: '#38bdf8' }}>
+                {formatCurrency(bankBal)}
               </div>
             </div>
 
-            {/* Jar 2: CC Liability */}
+            {/* Jar 2: Cash in Hand */}
+            <div className="glass jar-card">
+              <div className="jar-icon">{mode === 'kid' ? '👛' : '💵'}</div>
+              <div className="jar-title">
+                {mode === 'kid' ? 'Pocket Cash' : mode === 'zen' ? (cashAcc?.name || 'Cash Wallet') : '1020 • Asset:Cash'}
+              </div>
+              <div className={`jar-val num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ color: '#34d399' }}>
+                {formatCurrency(cashBal)}
+              </div>
+            </div>
+
+            {/* Jar 3: CC Liability */}
             <div className="glass jar-card">
               <div className="jar-icon">{mode === 'kid' ? '🐉' : '💳'}</div>
               <div className="jar-title">
-                {mode === 'kid' ? 'Borrowed Dragon Coins' : mode === 'zen' ? (ccAcc?.name || 'Credit Card') : '2010 • Liability:CC'}
+                {mode === 'kid' ? 'Borrowed Coins' : mode === 'zen' ? (ccAcc?.name || 'Credit Card') : '2010 • Liability:CC'}
               </div>
               <div className={`jar-val num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ color: '#fb7185' }}>
-                {ccAcc ? formatCurrency(ccAcc.balance_micro) : '₹0.00'}
+                {formatCurrency(ccBal)}
               </div>
             </div>
 
-            {/* Jar 3: Expense Jar */}
+            {/* Jar 4: Expense Jar */}
             <div className="glass jar-card">
               <div className="jar-icon">{mode === 'kid' ? '🍭' : '🍕'}</div>
               <div className="jar-title">
-                {mode === 'kid' ? 'Yummy Treats Jar' : mode === 'zen' ? (foodAcc?.name || 'Food & Dining') : '5020 • Expense:OpEx:Food'}
+                {mode === 'kid' ? 'Yummy Treats' : mode === 'zen' ? (foodAcc?.name || 'Food & Dining') : '5020 • Expense:Food'}
               </div>
               <div className={`jar-val num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ color: '#fbbf24' }}>
                 {foodAcc ? formatCurrency(foodAcc.balance_micro) : '₹0.00'}

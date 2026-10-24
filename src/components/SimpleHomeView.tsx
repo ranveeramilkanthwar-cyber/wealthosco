@@ -109,6 +109,10 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
     return accounts.filter((a) => a.account_type === 'EXPENSE').reduce((s, a) => s + a.balance_micro, 0n);
   }, [accounts]);
 
+  const netSavingsMicro = useMemo(() => {
+    return totalIncome - totalExpense;
+  }, [totalIncome, totalExpense]);
+
   // Peer Flow Balances & Scenarios (Other Expense & Other Income)
   const peerRecords = useMemo(() => {
     return currentUser ? getUserSheetRecords(currentUser.id) : [];
@@ -361,63 +365,146 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
               <div style={{ fontSize: '1.15rem', fontWeight: 800 }}>{hide(cashBalance)}</div>
             </div>
           </div>
+
+          {/* Mathematical Connection: Bank + Cash = Total Liquid In Hand */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            marginTop: '14px',
+            padding: '8px 12px',
+            background: 'rgba(0, 0, 0, 0.22)',
+            borderRadius: '12px',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span>🏦 Bank</span> <strong className="num-mono">{hide(bankBalance)}</strong>
+            </span>
+            <span style={{ color: '#A7F3D0', fontWeight: 900, fontSize: '0.95rem' }}>+</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span>💵 Cash</span> <strong className="num-mono">{hide(cashBalance)}</strong>
+            </span>
+            <span style={{ color: '#FEF08A', fontWeight: 900, fontSize: '0.95rem' }}>=</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.16)', padding: '2px 8px', borderRadius: '8px' }}>
+              <span>💰 Total In Hand</span> <strong className="num-mono">{hide(totalLiquid)}</strong>
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Monthly Inflow & Outflow Summary (Transfers are explicitly excluded) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-        <div
-          onClick={() => onNavigateTab('ledger')}
-          style={{
-            background: 'rgba(16,185,129,0.08)',
-            border: '1.5px solid rgba(16,185,129,0.25)',
-            borderRadius: '20px',
-            padding: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.12)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#10B981', letterSpacing: '0.05em' }}>
-              ↑ INCOME
-            </span>
-            <span style={{ fontSize: '14px' }}>💰</span>
+      {/* Monthly Inflow & Outflow Summary with Net Savings Equation */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: '10px' }}>
+          {/* Card 1: Income */}
+          <div
+            onClick={() => onNavigateTab('ledger')}
+            style={{
+              background: 'rgba(16,185,129,0.08)',
+              border: '1.5px solid rgba(16,185,129,0.25)',
+              borderRadius: '20px',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(16,185,129,0.08)')}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#10B981', letterSpacing: '0.05em' }}>
+                ↑ INCOME
+              </span>
+              <span style={{ fontSize: '13px' }}>💰</span>
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#10B981' }}>
+              {hide(totalIncome)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Earned inflows
+            </div>
           </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#10B981' }}>
-            {hide(totalIncome)}
+
+          {/* Card 2: Expenses */}
+          <div
+            onClick={() => onNavigateTab('ledger')}
+            style={{
+              background: 'rgba(239,68,68,0.08)',
+              border: '1.5px solid rgba(239,68,68,0.25)',
+              borderRadius: '20px',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#EF4444', letterSpacing: '0.05em' }}>
+                ↓ EXPENSES
+              </span>
+              <span style={{ fontSize: '13px' }}>💸</span>
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#EF4444' }}>
+              {hide(totalExpense)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Out-of-pocket
+            </div>
           </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Earned inflows
+
+          {/* Card 3: Net Savings */}
+          <div
+            onClick={() => onNavigateTab('ledger')}
+            style={{
+              background: 'rgba(99,102,241,0.08)',
+              border: '1.5px solid rgba(99,102,241,0.25)',
+              borderRadius: '20px',
+              padding: '14px',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.12)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(99,102,241,0.08)')}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#818CF8', letterSpacing: '0.05em' }}>
+                = NET SAVINGS
+              </span>
+              <span style={{ fontSize: '13px' }}>⚖️</span>
+            </div>
+            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: netSavingsMicro >= 0n ? '#818CF8' : '#F87171' }}>
+              {hide(netSavingsMicro)}
+            </div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+              Income - Expenses
+            </div>
           </div>
         </div>
 
-        <div
-          onClick={() => onNavigateTab('ledger')}
-          style={{
-            background: 'rgba(239,68,68,0.08)',
-            border: '1.5px solid rgba(239,68,68,0.25)',
-            borderRadius: '20px',
-            padding: '16px',
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.12)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#EF4444', letterSpacing: '0.05em' }}>
-              ↓ EXPENSES
-            </span>
-            <span style={{ fontSize: '14px' }}>💸</span>
-          </div>
-          <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#EF4444' }}>
-            {hide(totalExpense)}
-          </div>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-            Out-of-pocket spent
-          </div>
+        {/* Mathematical Equation Ribbon: Income - Expense = Net Savings */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid var(--border-subtle)',
+          borderRadius: '12px',
+          padding: '8px 14px',
+          fontSize: '0.76rem',
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          flexWrap: 'wrap',
+        }}>
+          <span style={{ color: '#10B981' }}>📈 Income (+{hide(totalIncome)})</span>
+          <span style={{ color: '#EF4444', fontWeight: 900, fontSize: '0.95rem' }}>-</span>
+          <span style={{ color: '#EF4444' }}>💸 Expenses (-{hide(totalExpense)})</span>
+          <span style={{ color: '#818CF8', fontWeight: 900, fontSize: '0.95rem' }}>=</span>
+          <span style={{ color: '#818CF8', background: 'rgba(99,102,241,0.14)', padding: '2px 8px', borderRadius: '6px' }}>
+            💰 Net Savings (={hide(netSavingsMicro)})
+          </span>
         </div>
       </div>
 
@@ -698,6 +785,36 @@ export const SimpleHomeView: React.FC<SimpleHomeViewProps> = ({
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Peer Financial Equation: Pending to Receive - Pending to Pay = Net Peer Position */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          background: 'rgba(0, 0, 0, 0.22)',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          borderRadius: '12px',
+          padding: '8px 14px',
+          fontSize: '0.76rem',
+          fontWeight: 700,
+          color: 'var(--text-secondary)',
+          flexWrap: 'wrap',
+          marginBottom: '14px',
+        }}>
+          <span style={{ color: '#38BDF8' }}>📥 To Receive (+₹{pendingPeerBalances.totalToReceive.toFixed(2)})</span>
+          <span style={{ color: '#FB923C', fontWeight: 900, fontSize: '0.95rem' }}>-</span>
+          <span style={{ color: '#FB923C' }}>📤 To Pay (-₹{pendingPeerBalances.totalToPay.toFixed(2)})</span>
+          <span style={{ color: '#A78BFA', fontWeight: 900, fontSize: '0.95rem' }}>=</span>
+          <span style={{
+            color: pendingPeerBalances.netPeerBalance >= 0 ? '#34D399' : '#FB7185',
+            background: pendingPeerBalances.netPeerBalance >= 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            padding: '2px 8px',
+            borderRadius: '6px'
+          }}>
+            ⚖️ Net Peer Position (={pendingPeerBalances.netPeerBalance >= 0 ? '+' : ''}₹{pendingPeerBalances.netPeerBalance.toFixed(2)})
+          </span>
         </div>
 
         {/* Active Pending Peer Debts & Receivables List */}

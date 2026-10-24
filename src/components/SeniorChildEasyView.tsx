@@ -65,30 +65,38 @@ export const SeniorChildEasyView: React.FC<SeniorChildEasyViewProps> = ({
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [scannedAmount, setScannedAmount] = useState('240');
 
-  // Piggy Bank Goal State (Grandparent & Child Piggy Match)
+  // Piggy Bank Goal State (Grandparent & Child Piggy Match) - Clean Zero Demo Data
   const [piggyCoins, setPiggyCoins] = useState(() => {
     try {
       const saved = localStorage.getItem('wealthos_v5_piggy_coins');
-      return saved ? parseInt(saved, 10) : 150;
+      return saved ? parseInt(saved, 10) : 0;
     } catch {
-      return 150;
+      return 0;
     }
   });
 
   const [bonusStars, setBonusStars] = useState(() => {
     try {
       const saved = localStorage.getItem('wealthos_v5_bonus_stars');
-      return saved ? parseInt(saved, 10) : 3;
+      return saved ? parseInt(saved, 10) : 0;
     } catch {
-      return 3;
+      return 0;
     }
   });
 
-  // Upcoming bills list
-  const [bills, setBills] = useState([
-    { id: 'b1', name: 'Electricity Bill', amount: 850, dueDate: 'Due Friday' },
-    { id: 'b2', name: 'Monthly Medicine Strip', amount: 450, dueDate: 'Due next week' },
-  ]);
+  // Upcoming bills list (User-managed, zero hardcoded demo bills)
+  const [bills, setBills] = useState<Array<{ id: string; name: string; amount: number; dueDate: string }>>(() => {
+    try {
+      const saved = localStorage.getItem('wealthos_v5_saved_bills');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [showAddBillModal, setShowAddBillModal] = useState(false);
+  const [newBillName, setNewBillName] = useState('');
+  const [newBillAmount, setNewBillAmount] = useState('');
+  const [newBillDueDate, setNewBillDueDate] = useState('');
 
   const bankAcc = accounts.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts[0];
   const cashAcc = accounts.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts[1];
@@ -314,8 +322,30 @@ export const SeniorChildEasyView: React.FC<SeniorChildEasyViewProps> = ({
             </div>
           </div>
 
-          <div className={`num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ fontSize: '2rem', fontWeight: 900, color: '#34d399', margin: '10px 0' }}>
+          <div className={`num-mono ${isPrivate ? 'blur-num' : ''}`} style={{ fontSize: '2rem', fontWeight: 900, color: '#34d399', margin: '8px 0 4px' }}>
             {formatCurrency(totalLiquid)}
+          </div>
+
+          {/* Mathematical Linking Connection: Bank + Cash = Total In Hand */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            background: 'rgba(255,255,255,0.06)',
+            borderRadius: '12px',
+            padding: '6px 10px',
+            fontSize: '0.74rem',
+            fontWeight: 700,
+            marginBottom: '10px',
+            color: 'var(--text-secondary)',
+            flexWrap: 'wrap'
+          }}>
+            <span>🏦 Bank {formatCurrency(bankAcc ? bankAcc.balance_micro : 0n)}</span>
+            <span style={{ color: '#10B981', fontWeight: 900, fontSize: '0.9rem' }}>+</span>
+            <span>💵 Cash {formatCurrency(cashAcc ? cashAcc.balance_micro : 0n)}</span>
+            <span style={{ color: '#F59E0B', fontWeight: 900, fontSize: '0.9rem' }}>=</span>
+            <span style={{ color: '#34D399', fontWeight: 800 }}>Total In Hand</span>
           </div>
 
           <button
@@ -324,7 +354,7 @@ export const SeniorChildEasyView: React.FC<SeniorChildEasyViewProps> = ({
               setShowDepositModal(true);
             }}
             className="pillow-btn pillow-green"
-            style={{ minHeight: '48px', padding: '8px 16px', fontSize: '0.85rem', width: '100%', marginTop: '6px' }}
+            style={{ minHeight: '48px', padding: '8px 16px', fontSize: '0.85rem', width: '100%', marginTop: '4px' }}
           >
             <PlusCircle size={18} />
             <span>+ Put Money In (Salary / Gift)</span>
@@ -333,17 +363,80 @@ export const SeniorChildEasyView: React.FC<SeniorChildEasyViewProps> = ({
 
         {/* Pouch 2: Bills & Medicine Reminder Box */}
         <div className="pillow-card" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <span style={{ fontSize: '1.8rem' }}>📅</span>
-            <div>
-              <h3 style={{ fontSize: '1.05rem', fontWeight: 800 }}>Bills &amp; Medicine Box</h3>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Kept aside safely</p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.8rem' }}>📅</span>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800 }}>Bills &amp; Medicine Box</h3>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Kept aside safely</p>
+              </div>
             </div>
+            <button
+              onClick={() => setShowAddBillModal(!showAddBillModal)}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+                padding: '4px 8px',
+                color: 'var(--text-primary)',
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                fontWeight: 700,
+              }}
+            >
+              {showAddBillModal ? 'Cancel' : '+ Add Bill'}
+            </button>
           </div>
 
+          {showAddBillModal && (
+            <div style={{ padding: '12px', background: 'rgba(255,255,255,0.04)', borderRadius: '12px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="text"
+                placeholder="Bill or Medicine name (e.g. WiFi, BP Pills)"
+                value={newBillName}
+                onChange={(e) => setNewBillName(e.target.value)}
+                style={{ padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.8rem' }}
+              />
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="number"
+                  placeholder="Amount (₹)"
+                  value={newBillAmount}
+                  onChange={(e) => setNewBillAmount(e.target.value)}
+                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.8rem' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Due note (e.g. Due 5th)"
+                  value={newBillDueDate}
+                  onChange={(e) => setNewBillDueDate(e.target.value)}
+                  style={{ flex: 1, padding: '8px', borderRadius: '8px', border: '1px solid var(--border-subtle)', background: 'rgba(0,0,0,0.3)', color: '#fff', fontSize: '0.8rem' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const amt = parseFloat(newBillAmount);
+                  if (!newBillName.trim() || isNaN(amt) || amt <= 0) return;
+                  const updated = [...bills, { id: 'bill_' + Date.now(), name: newBillName.trim(), amount: amt, dueDate: newBillDueDate.trim() || 'Upcoming' }];
+                  setBills(updated);
+                  localStorage.setItem('wealthos_v5_saved_bills', JSON.stringify(updated));
+                  setNewBillName('');
+                  setNewBillAmount('');
+                  setNewBillDueDate('');
+                  setShowAddBillModal(false);
+                }}
+                className="pillow-btn pillow-green"
+                style={{ minHeight: '36px', padding: '6px 12px', fontSize: '0.78rem' }}
+              >
+                Save Reminder
+              </button>
+            </div>
+          )}
+
           {bills.length === 0 ? (
-            <div style={{ padding: '16px', textAlign: 'center', color: '#34d399', fontWeight: 700, fontSize: '0.9rem' }}>
-              ✓ All bills &amp; medicines are paid!
+            <div style={{ padding: '16px', textAlign: 'center', color: '#34d399', fontWeight: 700, fontSize: '0.85rem' }}>
+              ✓ All bills &amp; medicines are clear! (0 pending)
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

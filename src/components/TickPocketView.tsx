@@ -18,6 +18,8 @@ import {
   Filter
 } from 'lucide-react';
 import { soundAndVoice } from '../../core/financial-engine/audioSpeechEngine';
+import { Account, Transaction as LedgerTransaction } from '../../core/financial-engine/types';
+import { formatCurrency, fromMicroUnits } from '../../core/financial-engine/microUnits';
 
 export type TransactionType = 'EXPENSE' | 'INCOME' | 'TRANSFER';
 
@@ -47,6 +49,8 @@ export interface HabitItem {
 
 interface TickPocketViewProps {
   isPrivate: boolean;
+  accounts?: Account[];
+  transactions?: LedgerTransaction[];
   onCommitDoubleEntry?: (tx: {
     type: TransactionType;
     category: string;
@@ -59,7 +63,7 @@ interface TickPocketViewProps {
   }) => void;
 }
 
-export function TickPocketView({ isPrivate, onCommitDoubleEntry }: TickPocketViewProps) {
+export function TickPocketView({ isPrivate, accounts, transactions: ledgerTx, onCommitDoubleEntry }: TickPocketViewProps) {
   // Pre-configured Categories & Sources (No demo transactions!)
   const [categories, setCategories] = useState<{
     EXPENSE: Array<{ id: string; name: string; icon: string; sources: string[] }>;
@@ -104,12 +108,19 @@ export function TickPocketView({ isPrivate, onCommitDoubleEntry }: TickPocketVie
   // History Tab Filter: All vs Expense vs Income vs Transfer
   const [historyFilter, setHistoryFilter] = useState<'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER'>('ALL');
 
-  // Initial Onboarding Balances Prompt
+  // Live linked balances from double-entry ledger
+  const bankAcc = accounts?.find((a) => a.id === 'acc_bank_primary' || (a.account_type === 'ASSET' && a.account_subtype === 'BANK')) || accounts?.[0];
+  const cashAcc = accounts?.find((a) => a.id === 'acc_cash_wallet' || (a.account_type === 'ASSET' && a.account_subtype === 'CASH')) || accounts?.[1];
+  const liveBankMicro = bankAcc ? bankAcc.balance_micro : 0n;
+  const liveCashMicro = cashAcc ? cashAcc.balance_micro : 0n;
+  const liveTotalLiquidMicro = liveBankMicro + liveCashMicro;
+
+  // Initial Onboarding Balances Prompt (automatically initialized if ledger accounts have balances)
   const [hasSetInitialBalances, setHasSetInitialBalances] = useState<boolean>(() => {
-    return localStorage.getItem('tickpocket_initialized') === 'true';
+    return localStorage.getItem('tickpocket_initialized') === 'true' || liveTotalLiquidMicro > 0n;
   });
   const [showInitialModal, setShowInitialModal] = useState<boolean>(() => {
-    return localStorage.getItem('tickpocket_initialized') !== 'true';
+    return localStorage.getItem('tickpocket_initialized') !== 'true' && liveTotalLiquidMicro === 0n;
   });
   const [initCashAmount, setInitCashAmount] = useState<string>('');
   const [initBankAmount, setInitBankAmount] = useState<string>('');
@@ -685,6 +696,39 @@ export function TickPocketView({ isPrivate, onCommitDoubleEntry }: TickPocketVie
         </div>
       )}
 
+      {/* Interlinked In-Hand Balances Bar (Synced across all modes & tabs) */}
+      {accounts && accounts.length > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08))',
+          border: '1.5px solid rgba(99,102,241,0.3)',
+          borderRadius: '16px',
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Wallet size={18} color="#6366F1" />
+            <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>Live In-Hand Liquid Balance (Synced with All Tabs):</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '0.82rem', fontWeight: 700 }}>
+            <span style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '8px' }}>
+              🏦 Bank: <strong className={isPrivate ? 'private-blur' : ''} style={{ color: '#6366F1' }}>{formatCurrency(liveBankMicro)}</strong>
+            </span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#10B981' }}>+</span>
+            <span style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '8px' }}>
+              💵 Cash: <strong className={isPrivate ? 'private-blur' : ''} style={{ color: '#10B981' }}>{formatCurrency(liveCashMicro)}</strong>
+            </span>
+            <span style={{ fontSize: '1rem', fontWeight: 900, color: '#F59E0B' }}>=</span>
+            <span style={{ background: 'rgba(99,102,241,0.18)', border: '1px solid rgba(99,102,241,0.4)', padding: '4px 12px', borderRadius: '8px', color: '#818CF8' }}>
+              💰 Total In Hand: <strong className={isPrivate ? 'private-blur' : ''}>{formatCurrency(liveTotalLiquidMicro)}</strong>
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* 4 Odometer Stat Cards (Showing Net, Income, Expense, and Separate Transfers) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px' }}>
         <div style={{
@@ -758,6 +802,29 @@ export function TickPocketView({ isPrivate, onCommitDoubleEntry }: TickPocketVie
             ATM, CC Pay, Opening Balances
           </div>
         </div>
+      </div>
+
+      {/* Mathematical Flow Equation: Total Income - Total Expense = Net Pocket Surplus */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 16px',
+        background: 'rgba(0,0,0,0.22)',
+        borderRadius: '12px',
+        fontSize: '0.8rem',
+        fontWeight: 700,
+        color: 'var(--text-secondary)',
+        flexWrap: 'wrap'
+      }}>
+        <span style={{ color: '#10B981' }}>📈 Income (+₹{totalIncome.toLocaleString('en-IN')})</span>
+        <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#EF4444' }}>-</span>
+        <span style={{ color: '#FF6B8B' }}>📉 Expenses (-₹{totalExpense.toLocaleString('en-IN')})</span>
+        <span style={{ fontWeight: 900, fontSize: '1.1rem', color: '#6366F1' }}>=</span>
+        <span style={{ color: '#818CF8', fontWeight: 800, background: 'rgba(99,102,241,0.14)', padding: '2px 8px', borderRadius: '6px' }}>
+          💰 Net Pocket Surplus (=₹{netPocket.toLocaleString('en-IN')})
+        </span>
       </div>
 
       {/* Main Dual Workspace: Left Quick Habits, Right Multi-Tick Builder */}

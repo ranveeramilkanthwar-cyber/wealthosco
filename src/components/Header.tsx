@@ -177,27 +177,30 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Double-Entry Invariant Badge */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: '6px', 
-            padding: '5px 12px', 
-            borderRadius: '9999px',
-            background: isEquationBalanced ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.15)',
-            border: `1px solid ${isEquationBalanced ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.4)'}`
-          }}>
+          <div 
+            title="Double-Entry Invariant: Assets = Liabilities + Equity (LHS == RHS, exactly 0 micro-unit drift)"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '5px 12px', 
+              borderRadius: '9999px',
+              background: isEquationBalanced ? 'rgba(16, 185, 129, 0.12)' : 'rgba(244, 63, 94, 0.15)',
+              border: `1px solid ${isEquationBalanced ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.4)'}`,
+              cursor: 'default'
+            }}>
             {isEquationBalanced ? (
               <>
                 <CheckCircle2 size={14} color="#34d399" />
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#34d399' }}>
-                  {mode === 'ca' ? 'LHS == RHS (Balanced)' : '✓ Zero Drift'}
+                  {mode === 'ca' ? 'LHS == RHS (Assets = Liab + Equity)' : '✓ Assets = Liab + Equity (0 Drift)'}
                 </span>
               </>
             ) : (
               <>
                 <AlertTriangle size={14} color="#fb7185" />
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#fb7185' }}>
-                  Δ {equationDiff.toString()}
+                  LHS ≠ RHS (Δ {equationDiff.toString()})
                 </span>
               </>
             )}

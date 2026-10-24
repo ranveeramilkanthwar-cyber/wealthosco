@@ -68,28 +68,6 @@ export const SplitwiseGraphView: React.FC = () => {
     setSimplified(null);
   };
 
-  const handleLoadDemoDataset = () => {
-    const people = ['Alice', 'Bob', 'Charlie', 'David', 'Emma', 'Frank', 'Grace', 'Henry', 'Ivy', 'Jack'];
-    const sample: PeerDebt[] = [];
-    for (let i = 0; i < 30; i++) {
-      const d = people[i % people.length];
-      const c = people[(i * 3 + 1) % people.length];
-      if (d !== c) {
-        sample.push({
-          debtor: d,
-          creditor: c,
-          amountMicro: toMicroUnits((i + 1) * 150),
-        });
-      }
-    }
-    setDebts(sample);
-    localStorage.setItem(
-      'wealthos_v4_split_debts',
-      JSON.stringify(sample.map((d) => ({ ...d, amountMicro: d.amountMicro.toString() })))
-    );
-    setSimplified(null);
-  };
-
   const handleSimplify = () => {
     if (debts.length === 0) return;
     const res = engine.simplifyDebts(debts);
@@ -127,15 +105,6 @@ export const SplitwiseGraphView: React.FC = () => {
             >
               <Plus size={14} />
               <span>Add Shared Debt</span>
-            </button>
-
-            <button
-              onClick={handleLoadDemoDataset}
-              className="btn-secondary"
-              style={{ padding: '8px 14px', fontSize: '0.8rem' }}
-              title="Load 10-person trip test case with 30 circular debts"
-            >
-              <span>Load 10-Person Test Case</span>
             </button>
 
             {debts.length > 0 && (
