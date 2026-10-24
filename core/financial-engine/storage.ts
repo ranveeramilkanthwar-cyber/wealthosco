@@ -115,11 +115,23 @@ export interface UserSheetRecord {
   time: string;
   userName: string;
   userEmail: string;
-  type: string;
+  type: string; // 'EXPENSE' | 'INCOME' | 'TRANSFER' | 'OTHER_EXPENSE' | 'OTHER_INCOME'
   category: string;
+  subCategory?: string;
   description: string;
   amount: number;
   paymentAccount: string;
+
+  // Rich metadata for detailed tracking & sheets
+  scenario?: 'SELF' | 'SOMEONE_PAID_FOR_ME' | 'PAID_FOR_SOMEONE_ELSE' | 'REMAINING_TO_RECEIVE' | 'SETTLEMENT_RECEIVED' | 'SETTLEMENT_PAID' | 'TRANSFER' | 'CALIBRATION';
+  personName?: string;
+  settlementStatus?: 'SETTLED' | 'PENDING' | 'PARTIAL';
+  remainingAmount?: number;
+  dueDate?: string;
+  runningBankBalance?: number;
+  runningCashBalance?: number;
+  netWorthSnapshot?: number;
+  notes?: string;
 }
 
 export function appendUserSheetRecord(userId: string, record: UserSheetRecord): void {
@@ -130,15 +142,15 @@ export function appendUserSheetRecord(userId: string, record: UserSheetRecord): 
     list.unshift(record);
     localStorage.setItem(key, JSON.stringify(list));
 
-    // If user configured a Google Sheets Webhook URL, post to it in background
+    // If user configured a Google Sheets Webhook URL, post to it in background safely
     const gsheetUrl = localStorage.getItem(`wealthos_user_${userId}_gsheet_url`);
-    if (gsheetUrl && gsheetUrl.startsWith('http')) {
+    if (gsheetUrl && gsheetUrl.startsWith('http') && typeof fetch !== 'undefined') {
       fetch(gsheetUrl, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(record),
-      }).catch((e) => console.log('GSheet sync error', e));
+      }).catch((e) => console.log('GSheet sync background notification', e));
     }
   } catch (err) {
     console.error('Failed to append user sheet record', err);
@@ -176,6 +188,46 @@ export function deleteUserSheetRecord(userId: string, recordId: string): void {
   }
 }
 
+export function getPendingPeerBalances(userId: string) {
+  const records = getUserSheetRecords(userId);
+  const pendingToReceive = records.filter(
+    (r) =>
+      r.settlementStatus === 'PENDING' &&
+      (r.scenario === 'PAID_FOR_SOMEONE_ELSE' || r.scenario === 'REMAINING_TO_RECEIVE')
+  );
+  const pendingToPay = records.filter(
+    (r) =>
+      r.settlementStatus === 'PENDING' &&
+      r.scenario === 'SOMEONE_PAID_FOR_ME'
+  );
+
+  const totalToReceive = pendingToReceive.reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount), 0);
+  const totalToPay = pendingToPay.reduce((s, r) => s + (r.remainingAmount !== undefined ? r.remainingAmount : r.amount), 0);
+
+  return {
+    pendingToReceive,
+    pendingToPay,
+    totalToReceive,
+    totalToPay,
+    netPeerBalance: totalToReceive - totalToPay,
+  };
+}
+
+export function settlePeerRecord(userId: string, recordId: string, settlementAmount?: number): void {
+  const records = getUserSheetRecords(userId);
+  const target = records.find((r) => r.id === recordId);
+  if (!target) return;
+
+  const currentRemaining = target.remainingAmount !== undefined ? target.remainingAmount : target.amount;
+  const payAmt = settlementAmount !== undefined ? settlementAmount : currentRemaining;
+  const nextRemaining = Math.max(0, currentRemaining - payAmt);
+
+  updateUserSheetRecord(userId, recordId, {
+    settlementStatus: nextRemaining <= 0 ? 'SETTLED' : 'PARTIAL',
+    remainingAmount: nextRemaining,
+  });
+}
+
 export function getUserSheetUrl(userId: string): string {
   try {
     return localStorage.getItem(`wealthos_user_${userId}_gsheet_url`) || '';
@@ -194,11 +246,12 @@ export function saveUserSheetUrl(userId: string, url: string): void {
 
 // User Aesthetic Themes & Transparent Background Preferences
 export interface UserThemePrefs {
-  bgTheme: string; // 'aurora' | 'emerald' | 'sunset' | 'cyberpunk' | 'obsidian' | 'frosted' | 'custom'
+  bgTheme: string; // 'aurora' | 'emerald' | 'sunset' | 'cyberpunk' | 'obsidian' | 'frosted' | 'candypop' | 'oceanflow' | 'custom'
   customBgUrl: string;
   glassOpacity: number; // 0.3 to 0.95
   glassBlur: number; // 6 to 30 px
   showIntroOnStart: boolean;
+  movingBackground: boolean; // Playful animated mesh / moving background
 }
 
 export const DEFAULT_THEME_PREFS: UserThemePrefs = {
@@ -207,6 +260,7 @@ export const DEFAULT_THEME_PREFS: UserThemePrefs = {
   glassOpacity: 0.85,
   glassBlur: 16,
   showIntroOnStart: true,
+  movingBackground: true,
 };
 
 export function getUserThemePrefs(userId: string): UserThemePrefs {
